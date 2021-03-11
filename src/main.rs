@@ -1,9 +1,12 @@
 extern crate clap;
 use clap::{Arg, App};
 use curl::easy::Easy;
-use std::{io::stdout, str, io::Write};
+use serde_json::Value;
+//use std::{io::stdout, str, io::Write};
 
-fn main() {
+use std::str;
+
+fn main() -> Result<(), ureq::Error> {
 
     // create new app
     let app = App::new("SML")
@@ -18,30 +21,21 @@ fn main() {
 
     match app.value_of("project_id"){
         Some(id) => {
-            let mut easy = Easy::new();
-            easy.follow_location(true).unwrap();
-
             let url = format!("https://api.cfwidget.com/{}", id);
-            println!("Request URL: {}", url);
-            easy.url(url.as_str()).unwrap();
-            easy.write_function(|data|{
-                stdout().write_all(data).unwrap();
+            println!("Request url: {}", url);
 
-                //let data_str = 	str::from_utf8(data).unwrap();
-                //println!("{}", data_str);
+            let body : String = ureq::get(url.as_str())
+                .call().unwrap()
+                .into_string().unwrap();
+            let v: Value = serde_json::from_str(body.as_str()).unwrap();
 
-                //let parsed = json::parse(data_str).unwrap();
-                //    
-                //parsed.dump();
-
-                Ok(data.len())
-            }).unwrap();
-
-			easy.perform().unwrap();
+            println!("Title: {}", v["title"]);
         },
         None => {
             println!("No id was provided.");
         }
     }
+
+    Ok(())
     
 }
