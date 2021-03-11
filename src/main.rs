@@ -1,55 +1,18 @@
 extern crate clap;
+use std::path::PathBuf;
+
 use clap::{App, Arg};
-use serde_json::{Map, Value};
-use std::io;
-//use std::{io::stdout, str, io::Write};
+mod cf;
+mod downloader;
 
-struct CFFile {
-    id: u64,
-    display: String,
-    name: String,
-    ftype: String,
-    version: String,
-}
-
-struct CFProject {
-    id: u64,
-    api_url: String,
-    files: Vec<CFFile>,
-}
-
-impl CFProject {
-    pub fn new(pid: u64, url: String) -> CFProject {
-        CFProject {
-            id: pid,
-            api_url: url,
-            files: Vec::new(),
-        }
-    }
-
-    pub fn get_json(&mut self) -> serde_json::Value {
-        // get proper endpoint
-        let body: String = ureq::get(format!("{}{}", self.api_url, self.id).as_str())
-            .call()
-            .unwrap()
-            .into_string()
-            .unwrap();
-        serde_json::from_str(body.as_str()).unwrap()
-    }
-}
-
-fn get_u64() -> Option<u64> {
-    let mut input_text = String::new();
-    io::stdin()
-        .read_line(&mut input_text)
-        .expect("Failed to get input");
-
-    Some(
-        input_text
-            .trim()
-            .parse::<u64>()
-            .expect("Error parsing number"),
-    )
+use downloader::Downloader;
+fn get_exec_name() -> Option<PathBuf> {
+    std::env::current_exe()
+        .ok()
+        .and_then(|mut pb| {
+            pb.pop();
+            Some(pb)
+        })
 }
 
 fn main() -> Result<(), ureq::Error> {
@@ -69,49 +32,23 @@ fn main() -> Result<(), ureq::Error> {
 
     match app.value_of("id") {
         Some(id) => {
-            let mut proj = CFProject::new(
+            let mut proj = cf::CFProject::new(
                 id.parse::<u64>().expect("Not a valid id"),
                 "https://api.cfwidget.com/".to_string(),
             );
 
-            let res: Value = proj.get_json();
+            let choice = proj.get_choice();
+            let download_url = proj.files[choice].get_download_url();
+            let mut download_path = get_exec_name().unwrap();
+            download_path.set_file_name(proj.files[choice].name.clone());
 
-            let files: &Vec<Value> = res["files"]
-                .as_array()
-                .expect("Error getting files: Invalid json");
+            println!("Got download url {}", download_url);
+            println!("Got download path {}", download_path.display());
+             
+            let mut downloader = Downloader::new(download_url, download_path);
+            downloader.download().expect("Error downloading file");
 
-            for (i, fileobj) in files.iter().enumerate() {
-                let cfile = CFFile {
-                    id: fileobj["id"].as_u64().unwrap(),
-                    display: fileobj["display"].as_str().unwrap().to_string(),
-                    name: fileobj["name"].as_str().unwrap().to_string(),
-                    ftype: fileobj["type"].as_str().unwrap().to_string(),
-                    version: fileobj["version"].as_str().unwrap().to_string(),
-                };
-
-                proj.files.push(cfile);
-
-                println!(
-                    "  [{}]: {} - {}@{}",
-                    i,
-                    fileobj["display"].as_str().unwrap(),
-                    fileobj["type"].as_str().unwrap(),
-                    fileobj["version"].as_str().unwrap()
-                );
-            }
-
-            println!("Choose file (Enter a number): ");
-
-            let choice: u64 = match get_u64() {
-                Some(n) => n,
-                None => 0,
-            };
-
-            let choice = choice as usize;
-            println!(
-                "You chose {} - {}@{}",
-                proj.files[choice].display, proj.files[choice].ftype, proj.files[choice].version
-            );
+            
         }
         None => {
             println!("No id was provided.");
