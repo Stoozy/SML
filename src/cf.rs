@@ -8,19 +8,24 @@ pub struct CFFile {
     pub ftype: String,
     pub version: String,
 }
-impl CFFile{
-    pub fn get_download_url(& self) -> String {
-        let mut filename : Vec<char> = self.name.chars().collect();
+impl CFFile {
+    pub fn get_download_url(&self) -> String {
+        let mut filename: Vec<char> = self.name.chars().collect();
 
-        for i in 0..filename.len(){
-            if filename[i] == ' '{
+        for i in 0..filename.len() {
+            if filename[i] == ' ' {
                 filename[i] = '+';
             }
-        } 
+        }
 
-        let file : String = filename.into_iter().collect(); 
+        let file: String = filename.into_iter().collect();
 
-        format!("https://media.forgecdn.net/files/{}/{}/{}", self.id/1000, self.id%1000,  file)
+        format!(
+            "https://media.forgecdn.net/files/{}/{}/{}",
+            self.id / 1000,
+            self.id % 1000,
+            file
+        )
     }
 }
 
