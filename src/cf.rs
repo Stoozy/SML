@@ -1,6 +1,7 @@
 use serde_json::Value;
 mod util;
 
+#[derive(Clone)]
 pub struct CFFile {
     pub id: u64,
     pub display: String,
@@ -8,6 +9,7 @@ pub struct CFFile {
     pub ftype: String,
     pub version: String,
 }
+
 impl CFFile {
     pub fn get_download_url(&self) -> String {
         let mut filename: Vec<char> = self.name.chars().collect();
@@ -29,6 +31,7 @@ impl CFFile {
     }
 }
 
+#[derive(Clone)]
 pub struct CFProject {
     id: u64,
     api_url: String,
@@ -61,6 +64,7 @@ impl CFProject {
             .expect("Error getting files: Invalid json");
 
         for (i, fileobj) in files.iter().enumerate() {
+            // fill vector
             let cfile = CFFile {
                 id: fileobj["id"].as_u64().unwrap(),
                 display: fileobj["display"].as_str().unwrap().to_string(),
@@ -71,6 +75,7 @@ impl CFProject {
 
             self.files.push(cfile);
 
+            // print options
             println!(
                 "  [{}]: {} - {}@{}",
                 i,

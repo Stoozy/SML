@@ -1,6 +1,7 @@
 use std::fs;
 use std::path::PathBuf;
 
+#[derive(Clone)]
 pub struct Instance {
     name: String,
     path: PathBuf,
