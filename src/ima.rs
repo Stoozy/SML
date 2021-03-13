@@ -1,14 +1,14 @@
-use std::path::PathBuf;
 use std::fs;
+use std::path::PathBuf;
 
-pub struct Instance{
+pub struct Instance {
     name: String,
-    path: PathBuf
+    path: PathBuf,
 }
 
-impl Instance{
-    pub fn new(n : String, p: PathBuf) -> Instance {
-        Instance{name: n, path: p}
+impl Instance {
+    pub fn new(n: String, p: PathBuf) -> Instance {
+        Instance { name: n, path: p }
     }
 
     pub fn get_path(&self) -> PathBuf {
@@ -16,41 +16,43 @@ impl Instance{
     }
 }
 
-
-pub struct InstanceManager{
+pub struct InstanceManager {
     path: PathBuf,
-    instances: Vec<Instance>
+    instances: Vec<Instance>,
 }
 
-impl InstanceManager{
+impl InstanceManager {
     pub fn new(pb: PathBuf) -> InstanceManager {
-        InstanceManager{path: pb, instances: Vec::new()}
+        InstanceManager {
+            path: pb,
+            instances: Vec::new(),
+        }
     }
 
-    pub fn get_path(& self) -> PathBuf {
-        return self.path.clone(); 
-    } 
+    pub fn get_path(&self) -> PathBuf {
+        return self.path.clone();
+    }
 
     pub fn create_instance(&mut self, name: String) -> Option<Instance> {
-        let mut ipath = self.path.clone(); 
+        let mut ipath = self.path.clone();
         ipath.push(name.clone());
 
         // create folder if it doesn't exist
-        // TODO: if it exists ask user if they 
-        //      want to delete the old one and 
+        // TODO: if it exists ask user if they
+        //      want to delete the old one and
         //      create a new one
-        
-        if !ipath.exists(){
+
+        if !ipath.exists() {
             println!("Creating instance dir at {}", ipath.display());
             fs::create_dir(ipath.as_path().clone()).expect("Error creating instances folder");
-        }else{
+        } else {
             println!("Directory already exists! Overwriting ...");
         }
 
         Some(Instance::new(name, ipath))
     }
 
-    pub fn add_instance(&mut self, i: Instance){
-       self.instances.push(i);
+    pub fn add_instance(&mut self, i: Instance) {
+        self.instances.push(i);
     }
 }

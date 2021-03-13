@@ -1,4 +1,3 @@
-use curl::*;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::io;
@@ -7,7 +6,6 @@ use std::path::PathBuf;
 pub struct Downloader {
     url: String,
     file_path: PathBuf,
-    curl_handle: easy::Easy,
 }
 
 impl Downloader {
@@ -15,13 +13,10 @@ impl Downloader {
         Downloader {
             url: u,
             file_path: fp,
-            curl_handle: easy::Easy::new(),
         }
     }
 
-    pub fn download(&mut self) -> Result<(), curl::Error> {
-        self.curl_handle.url(self.url.as_str()).unwrap();
-
+    pub fn download(&mut self) -> Result<(), ureq::Error> {
         let fp = self.file_path.clone();
         let mut body = ureq::get(self.url.as_str()).call().unwrap().into_reader();
 
