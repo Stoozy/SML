@@ -12,6 +12,7 @@ mod sml;
 
 use downloader::Downloader;
 use ima::InstanceManager;
+use sml::Invoker;
 use zip::ZipArchive;
 use clap::*;
 
@@ -60,6 +61,28 @@ fn main() {
 
             sml::get_stage(proj.files[choice].clone(), instance.clone());
             sml::get_modslist(proj.files[choice].clone(), instance.clone());
+
+            let mut libpath = instance.get_path().clone();
+            libpath.push("libraries/");
+
+            let mut binpath = instance.get_path().clone();
+            binpath.push("bin/");
+
+            let mut assetspath = instance.get_path().clone();
+            assetspath.push("assets/");
+
+            let classpaths = sml::get_class_paths(libpath);
+
+            let mut invoker = Invoker::new(
+                "java".to_string(), 
+                binpath, 
+                classpaths, 
+                format!("--launchTarget fmlclient  --fml.forgeVersion 35.1.4 --fml.mcVersion 1.16.4 --fml.forgeGroup net.minecraftforge --fml.mcpVersion 20201102.104115 --assetsDir \"{}\" --gameDir \"{}\"", assetspath.display(), instance.get_path().display()),
+                "cpw.mods.modlauncher.Launcher".to_string(),
+                );
+
+            invoker.gen_invocation();
+            invoker.display_invocation();
         }
         None => {
             println!("No id was provided.");

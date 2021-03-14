@@ -1,7 +1,8 @@
 use crate::cf::CFFile;
 use crate::ima::Instance;
 use ftp::{FtpStream};
-use std::{fs};
+use walkdir::WalkDir;
+use std::{fs, path::PathBuf};
 use std::io::Write;
 use zip::ZipArchive;
 use crate::downloader::Downloader;
@@ -9,44 +10,55 @@ use indicatif::{ProgressBar, ProgressStyle};
 
 const CHUNK_SIZE : usize = 8192;
 
+pub enum InvokerError{
+   CommandNotFound, 
+}
+
 pub struct Invoker{
     java : String,
-    libpath: PathBuf,
+    binpath: PathBuf,
     classpaths: Vec<PathBuf>,
     args: String,
-    main: String
+    main: String,
     ccmd: Option<String>
 }
 
 impl Invoker{
 
-    pub fn new(jp: String, lp: PathBuf, cp: Vec<PathBuf>, a: String, mc: String) -> Invoker{
-        Invoker{java:jp, libpath: lp, classpaths:cp, args: a, main:mc, ccmd: None}
+    pub fn new(jp: String, bp: PathBuf, cp: Vec<PathBuf>, a: String, mc: String) -> Invoker{
+        Invoker{java:jp, binpath: bp, classpaths:cp, args: a, main:mc, ccmd: None}
     }
 
 
-    pub fn gen_invocation(& self) {
-        let cmd : String = java;
-        cmd.push(format!(" -Djava.library.path={} ", libpath.display()));
+    pub fn gen_invocation(& mut  self) {
+        let mut cmd : String = self.java.clone();
+        cmd.push_str(format!(" -Djava.library.path=\"{}\" ", self.binpath.display()).as_str());
 
         // classpaths
-        cmd.push(" -cp "); 
-        for cp in self.classpaths {
+        cmd.push_str(" -cp \""); 
+        for cp in self.classpaths.clone() {
             let cp_str = format!("{}:", cp.display());
-            cmd.push(cp_str);
+            cmd.push_str(cp_str.as_str());
         }
+        cmd.push_str("\" ");
 
         // main class
-        cmd.push(format!(" {} {}", main, args);
+        cmd.push_str(format!(" {} {}", self.main, self.args).as_str());
 
-        self.ccmd = cmd;
+        self.ccmd = Some(cmd);
     }
 
-    pub fn invoke(& self) -> Result<(), Error> {
+    pub fn display_invocation(&self) -> (){
+        println!("{}", self.ccmd.clone().unwrap());
+    }
+
+    pub fn invoke(& self) -> Result<(), InvokerError> {
         // make sure command is not empty
         if self.ccmd.is_none(){
-            // return error here
+            return Err(InvokerError::CommandNotFound); 
         }
+
+        Ok(())
 
         // open subprocess with command here ...
     }
@@ -83,7 +95,7 @@ pub fn get_stage(chosen_proj: CFFile, instance: Instance) {
 
             let data = ftp_stream.simple_retr(stage_file_remote_path.as_str()).unwrap().into_inner();
             for i in 0..data.len()/CHUNK_SIZE{
-                if(i != (data.len()/CHUNK_SIZE)-1){
+                if i != (data.len()/CHUNK_SIZE)-1{
                     file.write_all(& data[i*CHUNK_SIZE..(i+1)*CHUNK_SIZE]);
                     pb.set_position((i*CHUNK_SIZE) as u64);
                 }else{                        
@@ -141,3 +153,25 @@ pub fn get_modslist(chosen_proj: CFFile, instance: Instance){
 
     fs::remove_file(download_path.clone()).expect("Error deleting stage zip file");
 }
+
+
+pub fn get_class_paths(libdir : PathBuf) -> Vec<PathBuf> {
+    let mut retvec = Vec::new();
+    for entry in WalkDir::new(libdir)
+                .follow_links(true)
+                .into_iter()
+                .filter_map(|e| e.ok())
+    {
+        let f_name = entry.file_name().to_string_lossy(); 
+        if f_name.ends_with(".jar") {
+            let fpbuf = entry.path().to_path_buf();
+            retvec.push(fpbuf);
+        }
+    }
+    
+    retvec
+}
+
+
+
+

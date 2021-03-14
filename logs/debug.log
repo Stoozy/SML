@@ -1,0 +1,139 @@
+[14Mar2021 13:11:02.629] [main/INFO] [cpw.mods.modlauncher.Launcher/MODLAUNCHER]: ModLauncher running: args [--launchTarget, fmlclient, --fml.forgeVersion, 35.1.4, --fml.mcVersion, 1.16.4, --fml.forgeGroup, net.minecraftforge, --fml.mcpVersion, 20201102.104115, --assetsDir, /home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/assets/, --gameDir, /home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6]
+[14Mar2021 13:11:02.632] [main/INFO] [cpw.mods.modlauncher.Launcher/MODLAUNCHER]: ModLauncher 8.0.6+85+master.325de55 starting: java version 1.8.0_252 by IcedTea
+[14Mar2021 13:11:02.638] [main/DEBUG] [cpw.mods.modlauncher.LaunchServiceHandler/MODLAUNCHER]: Found launch services [minecraft,testharness,fmlclient,fmlserver]
+[14Mar2021 13:11:02.648] [main/DEBUG] [cpw.mods.modlauncher.NameMappingServiceHandler/MODLAUNCHER]: Found naming services : []
+[14Mar2021 13:11:02.683] [main/DEBUG] [cpw.mods.modlauncher.LaunchPluginHandler/MODLAUNCHER]: Found launch plugins: [mixin,eventbus,object_holder_definalize,runtime_enum_extender,accesstransformer,capability_inject_definalize,runtimedistcleaner]
+[14Mar2021 13:11:02.691] [main/DEBUG] [cpw.mods.modlauncher.TransformationServicesHandler/MODLAUNCHER]: Discovering transformation services
+[14Mar2021 13:11:02.696] [main/DEBUG] [cpw.mods.modlauncher.TransformationServicesHandler/MODLAUNCHER]: Found additional transformation services from discovery services: []
+[14Mar2021 13:11:02.720] [main/DEBUG] [cpw.mods.modlauncher.TransformationServicesHandler/MODLAUNCHER]: Found transformer services : [mixin,fml]
+[14Mar2021 13:11:02.720] [main/DEBUG] [cpw.mods.modlauncher.TransformationServicesHandler/MODLAUNCHER]: Transformation services loading
+[14Mar2021 13:11:02.721] [main/DEBUG] [cpw.mods.modlauncher.TransformationServiceDecorator/MODLAUNCHER]: Loading service mixin
+[14Mar2021 13:11:02.721] [main/DEBUG] [cpw.mods.modlauncher.TransformationServiceDecorator/MODLAUNCHER]: Loaded service mixin
+[14Mar2021 13:11:02.721] [main/DEBUG] [cpw.mods.modlauncher.TransformationServiceDecorator/MODLAUNCHER]: Loading service fml
+[14Mar2021 13:11:02.721] [main/DEBUG] [net.minecraftforge.fml.loading.FMLServiceProvider/]: Injecting tracing printstreams for STDOUT/STDERR.
+[14Mar2021 13:11:02.724] [main/DEBUG] [net.minecraftforge.fml.loading.LauncherVersion/CORE]: Found FMLLauncher version 35.1
+[14Mar2021 13:11:02.724] [main/DEBUG] [net.minecraftforge.fml.loading.FMLLoader/CORE]: FML 35.1 loading
+[14Mar2021 13:11:02.724] [main/DEBUG] [net.minecraftforge.fml.loading.FMLLoader/CORE]: FML found ModLauncher version : 8.0.6+85+master.325de55
+[14Mar2021 13:11:02.724] [main/DEBUG] [net.minecraftforge.fml.loading.FMLLoader/CORE]: Initializing modjar URL handler
+[14Mar2021 13:11:02.725] [main/DEBUG] [net.minecraftforge.fml.loading.FMLLoader/CORE]: FML found AccessTransformer version : 2.2.0+57+master.16c1bdb
+[14Mar2021 13:11:02.725] [main/DEBUG] [net.minecraftforge.fml.loading.FMLLoader/CORE]: FML found EventBus version : 3.0.5+64+master.ec454d4
+[14Mar2021 13:11:02.725] [main/DEBUG] [net.minecraftforge.fml.loading.FMLLoader/CORE]: Found Runtime Dist Cleaner
+[14Mar2021 13:11:02.728] [main/DEBUG] [net.minecraftforge.fml.loading.FMLLoader/CORE]: FML found CoreMod version : 3.0.0+9+master.3817658
+[14Mar2021 13:11:02.728] [main/DEBUG] [net.minecraftforge.fml.loading.FMLLoader/CORE]: Found ForgeSPI package implementation version 3.2.0+13+master.8ddb2cc
+[14Mar2021 13:11:02.728] [main/DEBUG] [net.minecraftforge.fml.loading.FMLLoader/CORE]: Found ForgeSPI package specification 3
+[14Mar2021 13:11:02.791] [main/INFO] [net.minecraftforge.fml.loading.FixSSL/CORE]: Added Lets Encrypt root certificates as additional trust
+[14Mar2021 13:11:02.791] [main/DEBUG] [cpw.mods.modlauncher.TransformationServiceDecorator/MODLAUNCHER]: Loaded service fml
+[14Mar2021 13:11:02.793] [main/DEBUG] [cpw.mods.modlauncher.TransformationServicesHandler/MODLAUNCHER]: Configuring option handling for services
+[14Mar2021 13:11:02.802] [main/DEBUG] [cpw.mods.modlauncher.TransformationServicesHandler/MODLAUNCHER]: Transformation services initializing
+[14Mar2021 13:11:02.802] [main/DEBUG] [cpw.mods.modlauncher.TransformationServiceDecorator/MODLAUNCHER]: Initializing transformation service mixin
+[14Mar2021 13:11:02.804] [main/DEBUG] [mixin/]: Mixin bootstrap service org.spongepowered.asm.service.mojang.MixinServiceLaunchWrapperBootstrap is not available: LaunchWrapper is not available
+[14Mar2021 13:11:02.809] [main/DEBUG] [mixin/]: MixinService [ModLauncher] was successfully booted in sun.misc.Launcher$AppClassLoader@53d8d10a
+[14Mar2021 13:11:02.824] [main/INFO] [mixin/]: SpongePowered MIXIN Subsystem Version=0.8.2 Source=file:/home/stoozy/Downloads/sml/target/debug/instances/All%20the%20Mods%206-1.3.6/libraries/org/spongepowered/mixin/0.8.2/mixin-0.8.2.jar Service=ModLauncher Env=CLIENT
+[14Mar2021 13:11:02.826] [main/DEBUG] [mixin/]: Initialising Mixin Platform Manager
+[14Mar2021 13:11:02.826] [main/DEBUG] [mixin/]: Adding mixin platform agents for container ModLauncher Root Container(4f56a0a2)
+[14Mar2021 13:11:02.827] [main/DEBUG] [mixin/]: Instancing new MixinPlatformAgentMinecraftForge for ModLauncher Root Container(4f56a0a2)
+[14Mar2021 13:11:02.827] [main/DEBUG] [mixin/]: MixinPlatformAgentMinecraftForge rejected container ModLauncher Root Container(4f56a0a2)
+[14Mar2021 13:11:02.828] [main/DEBUG] [mixin/]: Instancing new MixinPlatformAgentDefault for ModLauncher Root Container(4f56a0a2)
+[14Mar2021 13:11:02.828] [main/DEBUG] [mixin/]: MixinPlatformAgentDefault accepted container ModLauncher Root Container(4f56a0a2)
+[14Mar2021 13:11:02.831] [main/DEBUG] [cpw.mods.modlauncher.TransformationServiceDecorator/MODLAUNCHER]: Initialized transformation service mixin
+[14Mar2021 13:11:02.831] [main/DEBUG] [cpw.mods.modlauncher.TransformationServiceDecorator/MODLAUNCHER]: Initializing transformation service fml
+[14Mar2021 13:11:02.831] [main/DEBUG] [net.minecraftforge.fml.loading.FMLServiceProvider/CORE]: Setting up basic FML game directories
+[14Mar2021 13:11:02.832] [main/DEBUG] [net.minecraftforge.fml.loading.FileUtils/CORE]: Found existing GAMEDIR directory : /home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6
+[14Mar2021 13:11:02.832] [main/DEBUG] [net.minecraftforge.fml.loading.FMLPaths/CORE]: Path GAMEDIR is /home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6
+[14Mar2021 13:11:02.832] [main/DEBUG] [net.minecraftforge.fml.loading.FileUtils/CORE]: Found existing MODSDIR directory : /home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/mods
+[14Mar2021 13:11:02.832] [main/DEBUG] [net.minecraftforge.fml.loading.FMLPaths/CORE]: Path MODSDIR is /home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/mods
+[14Mar2021 13:11:02.832] [main/DEBUG] [net.minecraftforge.fml.loading.FileUtils/CORE]: Found existing CONFIGDIR directory : /home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/config
+[14Mar2021 13:11:02.832] [main/DEBUG] [net.minecraftforge.fml.loading.FMLPaths/CORE]: Path CONFIGDIR is /home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/config
+[14Mar2021 13:11:02.833] [main/DEBUG] [net.minecraftforge.fml.loading.FMLPaths/CORE]: Path FMLCONFIG is /home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/config/fml.toml
+[14Mar2021 13:11:02.833] [main/DEBUG] [net.minecraftforge.fml.loading.FMLServiceProvider/CORE]: Loading configuration
+[14Mar2021 13:11:02.876] [main/DEBUG] [net.minecraftforge.fml.loading.FileUtils/CORE]: Making default config directory directory : /home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/defaultconfigs
+[14Mar2021 13:11:02.877] [main/DEBUG] [net.minecraftforge.fml.loading.FileUtils/CORE]: Created default config directory directory : /home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/defaultconfigs
+[14Mar2021 13:11:02.877] [main/DEBUG] [net.minecraftforge.fml.loading.FMLServiceProvider/CORE]: Preparing ModFile
+[14Mar2021 13:11:02.879] [main/DEBUG] [net.minecraftforge.fml.loading.FMLServiceProvider/CORE]: Preparing launch handler
+[14Mar2021 13:11:02.879] [main/DEBUG] [net.minecraftforge.fml.loading.FMLLoader/CORE]: Using fmlclient as launch service
+[14Mar2021 13:11:03.291] [main/DEBUG] [net.minecraftforge.fml.loading.FMLLoader/CORE]: Received command line version data  : MC Version: '1.16.4' MCP Version: '20201102.104115' Forge Version: '35.1.4' Forge group: 'net.minecraftforge'
+[14Mar2021 13:11:03.292] [main/DEBUG] [net.minecraftforge.fml.loading.LibraryFinder/CORE]: Found JAR asm at path /home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/libraries/org/ow2/asm/asm/7.2/asm-7.2.jar
+[14Mar2021 13:11:03.292] [main/DEBUG] [net.minecraftforge.fml.loading.LibraryFinder/CORE]: Found probable library path /home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/libraries
+[14Mar2021 13:11:03.293] [main/DEBUG] [net.minecraftforge.fml.loading.LibraryFinder/CORE]: Found forge path /home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/libraries/net/minecraftforge/forge/1.16.4-35.1.4/forge-1.16.4-35.1.4-universal.jar is present
+[14Mar2021 13:11:03.293] [main/DEBUG] [net.minecraftforge.fml.loading.LibraryFinder/CORE]: SRG MC at /home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/libraries/net/minecraft/client/1.16.4-20201102.104115/client-1.16.4-20201102.104115-srg.jar is present
+[14Mar2021 13:11:03.293] [main/DEBUG] [net.minecraftforge.fml.loading.LibraryFinder/CORE]: MC Extras at /home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/libraries/net/minecraft/client/1.16.4-20201102.104115/client-1.16.4-20201102.104115-extra.jar is present
+[14Mar2021 13:11:03.293] [main/DEBUG] [net.minecraftforge.fml.loading.LibraryFinder/CORE]: Forge patches at /home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/libraries/net/minecraftforge/forge/1.16.4-35.1.4/forge-1.16.4-35.1.4-client.jar is present
+[14Mar2021 13:11:03.321] [main/DEBUG] [net.minecraftforge.fml.loading.LanguageLoadingProvider/CORE]: Found 2 language providers
+[14Mar2021 13:11:03.322] [main/DEBUG] [net.minecraftforge.fml.loading.LanguageLoadingProvider/CORE]: Found language provider javafml, version 35.1
+[14Mar2021 13:11:03.325] [main/DEBUG] [net.minecraftforge.fml.loading.LanguageLoadingProvider/CORE]: Found language provider minecraft, version 1
+[14Mar2021 13:11:03.325] [main/DEBUG] [net.minecraftforge.fml.loading.LanguageLoadingProvider/CORE]: Skipping adding forge jar - javafml is already present
+[14Mar2021 13:11:03.327] [main/DEBUG] [cpw.mods.modlauncher.TransformationServiceDecorator/MODLAUNCHER]: Initialized transformation service fml
+[14Mar2021 13:11:03.327] [main/DEBUG] [cpw.mods.modlauncher.NameMappingServiceHandler/MODLAUNCHER]: Current naming domain is 'srg'
+[14Mar2021 13:11:03.327] [main/DEBUG] [cpw.mods.modlauncher.NameMappingServiceHandler/MODLAUNCHER]: Identified name mapping providers {}
+[14Mar2021 13:11:03.328] [main/DEBUG] [cpw.mods.modlauncher.TransformationServicesHandler/MODLAUNCHER]: Transformation services begin scanning
+[14Mar2021 13:11:03.328] [main/DEBUG] [cpw.mods.modlauncher.TransformationServiceDecorator/MODLAUNCHER]: Beginning scan trigger - transformation service mixin
+[14Mar2021 13:11:03.328] [main/DEBUG] [cpw.mods.modlauncher.TransformationServiceDecorator/MODLAUNCHER]: End scan trigger - transformation service mixin
+[14Mar2021 13:11:03.328] [main/DEBUG] [cpw.mods.modlauncher.TransformationServiceDecorator/MODLAUNCHER]: Beginning scan trigger - transformation service fml
+[14Mar2021 13:11:03.328] [main/DEBUG] [net.minecraftforge.fml.loading.FMLServiceProvider/CORE]: Initiating mod scan
+[14Mar2021 13:11:03.391] [main/DEBUG] [net.minecraftforge.fml.loading.moddiscovery.ModListHandler/CORE]: Found mod coordinates from lists: []
+[14Mar2021 13:11:03.405] [main/DEBUG] [net.minecraftforge.fml.loading.moddiscovery.ModDiscoverer/CORE]: Found Mod Locators : (mods folder:null),(maven libs:null),(exploded directory:null),(minecraft:null)
+[14Mar2021 13:11:03.425] [main/DEBUG] [net.minecraftforge.fml.loading.moddiscovery.ModFileParser/LOADING]: Considering mod file candidate /home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/libraries/net/minecraftforge/forge/1.16.4-35.1.4/forge-1.16.4-35.1.4-universal.jar
+[14Mar2021 13:11:03.447] [main/DEBUG] [net.minecraftforge.fml.loading.moddiscovery.ModFileInfo/LOADING]: Found valid mod file forge-1.16.4-35.1.4-universal.jar with {forge} mods - versions {35.1.4}
+[14Mar2021 13:11:03.457] [main/DEBUG] [net.minecraftforge.fml.loading.moddiscovery.ModFile/LOADING]: Loading mod file /home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/libraries/net/minecraftforge/forge/1.16.4-35.1.4/forge-1.16.4-35.1.4-universal.jar with language javafml
+[14Mar2021 13:11:03.479] [main/DEBUG] [net.minecraftforge.fml.loading.moddiscovery.ModFileParser/LOADING]: Found coremod fieldtomethodtransformers with Javascript path META-INF/fieldtomethodtransformers.js
+[14Mar2021 13:11:03.480] [main/DEBUG] [net.minecraftforge.fml.loading.moddiscovery.ModFile/LOADING]: Found coremod META-INF/fieldtomethodtransformers.js
+[14Mar2021 13:11:03.480] [main/DEBUG] [net.minecraftforge.fml.loading.moddiscovery.ModFileParser/LOADING]: Considering mod file candidate /home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/libraries/net/minecraftforge/forge/1.16.4-35.1.4/forge-1.16.4-35.1.4-client.jar
+[14Mar2021 13:11:03.482] [main/DEBUG] [net.minecraftforge.fml.loading.moddiscovery.ModFileInfo/LOADING]: Found valid mod file forge-1.16.4-35.1.4-client.jar with {minecraft} mods - versions {1.16.4}
+[14Mar2021 13:11:03.482] [main/DEBUG] [net.minecraftforge.fml.loading.moddiscovery.ModFile/LOADING]: Loading mod file /home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/libraries/net/minecraftforge/forge/1.16.4-35.1.4/forge-1.16.4-35.1.4-client.jar with language minecraft
+[14Mar2021 13:11:03.494] [main/DEBUG] [net.minecraftforge.fml.loading.ModSorter/LOADING]: Found 0 mandatory requirements
+[14Mar2021 13:11:03.495] [main/DEBUG] [net.minecraftforge.fml.loading.ModSorter/LOADING]: Found 0 mandatory mod requirements missing
+[14Mar2021 13:11:03.751] [main/DEBUG] [cpw.mods.modlauncher.TransformationServiceDecorator/MODLAUNCHER]: End scan trigger - transformation service fml
+[14Mar2021 13:11:03.752] [main/DEBUG] [cpw.mods.modlauncher.TransformationServicesHandler/MODLAUNCHER]: Transformation services loading transformers
+[14Mar2021 13:11:03.752] [main/DEBUG] [cpw.mods.modlauncher.TransformationServiceDecorator/MODLAUNCHER]: Initializing transformers for transformation service mixin
+[14Mar2021 13:11:03.752] [main/DEBUG] [cpw.mods.modlauncher.TransformationServiceDecorator/MODLAUNCHER]: Initialized transformers for transformation service mixin
+[14Mar2021 13:11:03.752] [main/DEBUG] [cpw.mods.modlauncher.TransformationServiceDecorator/MODLAUNCHER]: Initializing transformers for transformation service fml
+[14Mar2021 13:11:03.753] [main/DEBUG] [net.minecraftforge.fml.loading.FMLServiceProvider/CORE]: Loading coremod transformers
+[14Mar2021 13:11:03.753] [main/DEBUG] [net.minecraftforge.coremod.CoreModEngine/COREMOD]: Loading CoreMod from META-INF/fieldtomethodtransformers.js
+[14Mar2021 13:11:03.841] [main/DEBUG] [net.minecraftforge.coremod.CoreModEngine/COREMOD]: CoreMod loaded successfully
+[14Mar2021 13:11:03.847] [main/DEBUG] [cpw.mods.modlauncher.TransformStore/MODLAUNCHER]: Adding transformer net.minecraftforge.coremod.transformer.CoreModClassTransformer@26f143ed to Target : CLASS {Lnet/minecraft/potion/EffectInstance;} {} {V}
+[14Mar2021 13:11:03.848] [main/DEBUG] [cpw.mods.modlauncher.TransformStore/MODLAUNCHER]: Adding transformer net.minecraftforge.coremod.transformer.CoreModClassTransformer@6a1ebcff to Target : CLASS {Lnet/minecraft/block/FlowingFluidBlock;} {} {V}
+[14Mar2021 13:11:03.848] [main/DEBUG] [cpw.mods.modlauncher.TransformStore/MODLAUNCHER]: Adding transformer net.minecraftforge.coremod.transformer.CoreModClassTransformer@19868320 to Target : CLASS {Lnet/minecraft/item/BucketItem;} {} {V}
+[14Mar2021 13:11:03.848] [main/DEBUG] [cpw.mods.modlauncher.TransformStore/MODLAUNCHER]: Adding transformer net.minecraftforge.coremod.transformer.CoreModClassTransformer@50b0bc4c to Target : CLASS {Lnet/minecraft/block/StairsBlock;} {} {V}
+[14Mar2021 13:11:03.848] [main/DEBUG] [cpw.mods.modlauncher.TransformStore/MODLAUNCHER]: Adding transformer net.minecraftforge.coremod.transformer.CoreModClassTransformer@c20be82 to Target : CLASS {Lnet/minecraft/block/FlowerPotBlock;} {} {V}
+[14Mar2021 13:11:03.849] [main/DEBUG] [cpw.mods.modlauncher.TransformStore/MODLAUNCHER]: Adding transformer net.minecraftforge.coremod.transformer.CoreModClassTransformer@13c612bd to Target : CLASS {Lnet/minecraft/item/FishBucketItem;} {} {V}
+[14Mar2021 13:11:03.849] [main/DEBUG] [cpw.mods.modlauncher.TransformationServiceDecorator/MODLAUNCHER]: Initialized transformers for transformation service fml
+[14Mar2021 13:11:03.876] [main/DEBUG] [mixin/]: Processing prepare() for PlatformAgent[MixinPlatformAgentDefault:ModLauncher Root Container(4f56a0a2)]
+[14Mar2021 13:11:03.876] [main/DEBUG] [mixin/]: Processing launch tasks for PlatformAgent[MixinPlatformAgentDefault:ModLauncher Root Container(4f56a0a2)]
+[14Mar2021 13:11:03.876] [main/DEBUG] [mixin/]: Adding mixin platform agents for container ContainerHandleModLauncher.Resource(forge-1.16.4-35.1.4-client.jar:/home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/libraries/net/minecraftforge/forge/1.16.4-35.1.4/forge-1.16.4-35.1.4-client.jar)
+[14Mar2021 13:11:03.877] [main/DEBUG] [mixin/]: Instancing new MixinPlatformAgentMinecraftForge for ContainerHandleModLauncher.Resource(forge-1.16.4-35.1.4-client.jar:/home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/libraries/net/minecraftforge/forge/1.16.4-35.1.4/forge-1.16.4-35.1.4-client.jar)
+[14Mar2021 13:11:03.877] [main/DEBUG] [mixin/]: MixinPlatformAgentMinecraftForge rejected container ContainerHandleModLauncher.Resource(forge-1.16.4-35.1.4-client.jar:/home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/libraries/net/minecraftforge/forge/1.16.4-35.1.4/forge-1.16.4-35.1.4-client.jar)
+[14Mar2021 13:11:03.877] [main/DEBUG] [mixin/]: Instancing new MixinPlatformAgentDefault for ContainerHandleModLauncher.Resource(forge-1.16.4-35.1.4-client.jar:/home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/libraries/net/minecraftforge/forge/1.16.4-35.1.4/forge-1.16.4-35.1.4-client.jar)
+[14Mar2021 13:11:03.877] [main/DEBUG] [mixin/]: MixinPlatformAgentDefault accepted container ContainerHandleModLauncher.Resource(forge-1.16.4-35.1.4-client.jar:/home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/libraries/net/minecraftforge/forge/1.16.4-35.1.4/forge-1.16.4-35.1.4-client.jar)
+[14Mar2021 13:11:03.878] [main/DEBUG] [mixin/]: Processing prepare() for PlatformAgent[MixinPlatformAgentDefault:ContainerHandleModLauncher.Resource(forge-1.16.4-35.1.4-client.jar:/home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/libraries/net/minecraftforge/forge/1.16.4-35.1.4/forge-1.16.4-35.1.4-client.jar)]
+[14Mar2021 13:11:03.878] [main/DEBUG] [mixin/]: Adding mixin platform agents for container ContainerHandleModLauncher.Resource(forge-1.16.4-35.1.4-universal.jar:/home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/libraries/net/minecraftforge/forge/1.16.4-35.1.4/forge-1.16.4-35.1.4-universal.jar)
+[14Mar2021 13:11:03.878] [main/DEBUG] [mixin/]: Instancing new MixinPlatformAgentMinecraftForge for ContainerHandleModLauncher.Resource(forge-1.16.4-35.1.4-universal.jar:/home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/libraries/net/minecraftforge/forge/1.16.4-35.1.4/forge-1.16.4-35.1.4-universal.jar)
+[14Mar2021 13:11:03.879] [main/DEBUG] [mixin/]: MixinPlatformAgentMinecraftForge rejected container ContainerHandleModLauncher.Resource(forge-1.16.4-35.1.4-universal.jar:/home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/libraries/net/minecraftforge/forge/1.16.4-35.1.4/forge-1.16.4-35.1.4-universal.jar)
+[14Mar2021 13:11:03.879] [main/DEBUG] [mixin/]: Instancing new MixinPlatformAgentDefault for ContainerHandleModLauncher.Resource(forge-1.16.4-35.1.4-universal.jar:/home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/libraries/net/minecraftforge/forge/1.16.4-35.1.4/forge-1.16.4-35.1.4-universal.jar)
+[14Mar2021 13:11:03.879] [main/DEBUG] [mixin/]: MixinPlatformAgentDefault accepted container ContainerHandleModLauncher.Resource(forge-1.16.4-35.1.4-universal.jar:/home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/libraries/net/minecraftforge/forge/1.16.4-35.1.4/forge-1.16.4-35.1.4-universal.jar)
+[14Mar2021 13:11:03.880] [main/DEBUG] [mixin/]: Processing prepare() for PlatformAgent[MixinPlatformAgentDefault:ContainerHandleModLauncher.Resource(forge-1.16.4-35.1.4-universal.jar:/home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/libraries/net/minecraftforge/forge/1.16.4-35.1.4/forge-1.16.4-35.1.4-universal.jar)]
+[14Mar2021 13:11:03.880] [main/DEBUG] [mixin/]: inject() running with 3 agents
+[14Mar2021 13:11:03.880] [main/DEBUG] [mixin/]: Processing inject() for PlatformAgent[MixinPlatformAgentDefault:ModLauncher Root Container(4f56a0a2)]
+[14Mar2021 13:11:03.880] [main/DEBUG] [mixin/]: Processing inject() for PlatformAgent[MixinPlatformAgentDefault:ContainerHandleModLauncher.Resource(forge-1.16.4-35.1.4-client.jar:/home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/libraries/net/minecraftforge/forge/1.16.4-35.1.4/forge-1.16.4-35.1.4-client.jar)]
+[14Mar2021 13:11:03.881] [main/DEBUG] [mixin/]: Processing inject() for PlatformAgent[MixinPlatformAgentDefault:ContainerHandleModLauncher.Resource(forge-1.16.4-35.1.4-universal.jar:/home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/libraries/net/minecraftforge/forge/1.16.4-35.1.4/forge-1.16.4-35.1.4-universal.jar)]
+[14Mar2021 13:11:03.881] [main/INFO] [cpw.mods.modlauncher.LaunchServiceHandler/MODLAUNCHER]: Launching target 'fmlclient' with arguments [--gameDir, /home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6, --assetsDir, /home/stoozy/Downloads/sml/target/debug/instances/All the Mods 6-1.3.6/assets]
+[14Mar2021 13:11:03.926] [main/DEBUG] [mixin/]: Error cleaning class output directory: .mixin.out
+[14Mar2021 13:11:03.958] [main/DEBUG] [mixin/]: Preparing mixins for MixinEnvironment[DEFAULT]
+[14Mar2021 13:11:04.025] [main/INFO] [STDERR/]: [java.lang.ThreadGroup:uncaughtException:1052]: java.lang.RuntimeException: java.lang.reflect.InvocationTargetException
+[14Mar2021 13:11:04.027] [main/INFO] [STDERR/]: [java.lang.ThreadGroup:uncaughtException:1052]: 	at cpw.mods.modlauncher.LaunchServiceHandlerDecorator.launch(LaunchServiceHandlerDecorator.java:39)
+[14Mar2021 13:11:04.027] [main/INFO] [STDERR/]: [java.lang.ThreadGroup:uncaughtException:1052]: 	at cpw.mods.modlauncher.LaunchServiceHandler.launch(LaunchServiceHandler.java:54)
+[14Mar2021 13:11:04.027] [main/INFO] [STDERR/]: [java.lang.ThreadGroup:uncaughtException:1052]: 	at cpw.mods.modlauncher.LaunchServiceHandler.launch(LaunchServiceHandler.java:72)
+[14Mar2021 13:11:04.027] [main/INFO] [STDERR/]: [java.lang.ThreadGroup:uncaughtException:1052]: 	at cpw.mods.modlauncher.Launcher.run(Launcher.java:82)
+[14Mar2021 13:11:04.028] [main/INFO] [STDERR/]: [java.lang.ThreadGroup:uncaughtException:1052]: 	at cpw.mods.modlauncher.Launcher.main(Launcher.java:66)
+[14Mar2021 13:11:04.028] [main/INFO] [STDERR/]: [java.lang.ThreadGroup:uncaughtException:1061]: Caused by: java.lang.reflect.InvocationTargetException
+[14Mar2021 13:11:04.028] [main/INFO] [STDERR/]: [java.lang.ThreadGroup:uncaughtException:1061]: 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+[14Mar2021 13:11:04.029] [main/INFO] [STDERR/]: [java.lang.ThreadGroup:uncaughtException:1061]: 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+[14Mar2021 13:11:04.029] [main/INFO] [STDERR/]: [java.lang.ThreadGroup:uncaughtException:1061]: 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+[14Mar2021 13:11:04.030] [main/INFO] [STDERR/]: [java.lang.ThreadGroup:uncaughtException:1061]: 	at java.lang.reflect.Method.invoke(Method.java:498)
+[14Mar2021 13:11:04.035] [main/INFO] [STDERR/]: [java.lang.ThreadGroup:uncaughtException:1061]: 	at net.minecraftforge.fml.loading.FMLClientLaunchProvider.lambda$launchService$0(FMLClientLaunchProvider.java:51)
+[14Mar2021 13:11:04.036] [main/INFO] [STDERR/]: [java.lang.ThreadGroup:uncaughtException:1061]: 	at cpw.mods.modlauncher.LaunchServiceHandlerDecorator.launch(LaunchServiceHandlerDecorator.java:37)
+[14Mar2021 13:11:04.036] [main/INFO] [STDERR/]: [java.lang.ThreadGroup:uncaughtException:1061]: 	... 4 more
+[14Mar2021 13:11:04.038] [main/INFO] [STDERR/]: [java.lang.Throwable:printStackTrace:644]: Caused by: joptsimple.MissingRequiredOptionsException: Missing required option(s) [accessToken, version]
+[14Mar2021 13:11:04.039] [main/INFO] [STDERR/]: [java.lang.Throwable:printStackTrace:644]: 	at joptsimple.OptionParser.ensureRequiredOptions(OptionParser.java:426)
+[14Mar2021 13:11:04.039] [main/INFO] [STDERR/]: [java.lang.Throwable:printStackTrace:644]: 	at joptsimple.OptionParser.parse(OptionParser.java:400)
+[14Mar2021 13:11:04.040] [main/INFO] [STDERR/]: [java.lang.Throwable:printStackTrace:644]: 	at net.minecraft.client.main.Main.main(Main.java:77)
+[14Mar2021 13:11:04.040] [main/INFO] [STDERR/]: [java.lang.Throwable:printStackTrace:644]: 	... 10 more
