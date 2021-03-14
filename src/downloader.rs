@@ -1,9 +1,9 @@
+use indicatif::{ProgressBar, ProgressStyle};
+use std::fs;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::io;
 use std::path::PathBuf;
-use std::fs;
-use indicatif::{ProgressBar, ProgressStyle};
 
 pub struct Downloader {
     url: String,
@@ -18,19 +18,19 @@ impl Downloader {
         }
     }
 
-    pub fn get_file_size(& self) -> u64 {
+    pub fn get_file_size(&self) -> u64 {
         fs::metadata(self.file_path.clone())
-            .expect("Error getting filesize").len()
+            .expect("Error getting filesize")
+            .len()
     }
     pub fn download(&mut self) -> Result<(), ureq::Error> {
-         
         let fp = self.file_path.clone();
         File::create(fp.clone()).expect("Error creating file");
         let fs = self.get_file_size();
 
-
         let mut body = ureq::get(self.url.as_str()).call().unwrap();
-        let total_size = body.header("Content-length")
+        let total_size = body
+            .header("Content-length")
             .unwrap()
             .trim()
             .parse::<u64>()

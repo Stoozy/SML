@@ -4,17 +4,16 @@ extern crate ftp;
 use std::fs;
 use std::path::PathBuf;
 
-
 mod cf;
 mod downloader;
 mod ima;
 mod sml;
 
+use clap::*;
 use downloader::Downloader;
 use ima::InstanceManager;
 use sml::Invoker;
 use zip::ZipArchive;
-use clap::*;
 
 fn get_instances_path() -> Option<PathBuf> {
     std::env::current_exe().ok().and_then(|mut pb| {
@@ -74,10 +73,10 @@ fn main() {
             let classpaths = sml::get_class_paths(libpath);
 
             let mut invoker = Invoker::new(
-                "java".to_string(), 
-                binpath, 
-                classpaths, 
-                format!("--launchTarget fmlclient  --fml.forgeVersion 35.1.4 --fml.mcVersion 1.16.4 --fml.forgeGroup net.minecraftforge --fml.mcpVersion 20201102.104115 --assetsDir \"{}\" --gameDir \"{}\"", assetspath.display(), instance.get_path().display()),
+                "java".to_string(),
+                binpath,
+                classpaths,
+                format!("--launchTarget fmlclient  --fml.forgeVersion 35.1.4 --fml.mcVersion 1.16.4 --fml.forgeGroup net.minecraftforge --fml.mcpVersion 20201102.104115 --assetsDir \"{}\" --gameDir \"{}\" --version  {}", assetspath.display(), instance.get_path().display(), proj.files[choice].version),
                 "cpw.mods.modlauncher.Launcher".to_string(),
                 );
 
@@ -88,5 +87,4 @@ fn main() {
             println!("No id was provided.");
         }
     }
-
 }
