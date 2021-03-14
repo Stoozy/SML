@@ -9,6 +9,49 @@ use indicatif::{ProgressBar, ProgressStyle};
 
 const CHUNK_SIZE : usize = 8192;
 
+pub struct Invoker{
+    java : String,
+    libpath: PathBuf,
+    classpaths: Vec<PathBuf>,
+    args: String,
+    main: String
+    ccmd: Option<String>
+}
+
+impl Invoker{
+
+    pub fn new(jp: String, lp: PathBuf, cp: Vec<PathBuf>, a: String, mc: String) -> Invoker{
+        Invoker{java:jp, libpath: lp, classpaths:cp, args: a, main:mc, ccmd: None}
+    }
+
+
+    pub fn gen_invocation(& self) {
+        let cmd : String = java;
+        cmd.push(format!(" -Djava.library.path={} ", libpath.display()));
+
+        // classpaths
+        cmd.push(" -cp "); 
+        for cp in self.classpaths {
+            let cp_str = format!("{}:", cp.display());
+            cmd.push(cp_str);
+        }
+
+        // main class
+        cmd.push(format!(" {} {}", main, args);
+
+        self.ccmd = cmd;
+    }
+
+    pub fn invoke(& self) -> Result<(), Error> {
+        // make sure command is not empty
+        if self.ccmd.is_none(){
+            // return error here
+        }
+
+        // open subprocess with command here ...
+    }
+
+}
 
 // gets and extracts sml stage for forge version
 pub fn get_stage(chosen_proj: CFFile, instance: Instance) {
