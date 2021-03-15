@@ -5,7 +5,7 @@ use ftp::FtpStream;
 use indicatif::{ProgressBar, ProgressStyle};
 use rpassword::read_password;
 use serde_json::*;
-use std::io;
+use std::{fs::File, io::{self, BufReader}};
 use std::io::Write;
 use std::{fs, path::PathBuf};
 use walkdir::WalkDir;
@@ -48,12 +48,11 @@ impl Invoker {
         cmd.push_str(format!(" -Djava.library.path=\"{}\" ", self.binpath.display()).as_str());
 
         // classpaths
-        cmd.push_str(" -cp \"");
+        cmd.push_str(" -cp ");
         for cp in self.classpaths.clone() {
-            let cp_str = format!("{}:", cp.display());
+            let cp_str = format!("\"{}\":", cp.display());
             cmd.push_str(cp_str.as_str());
         }
-        cmd.push_str("\" ");
 
         // main class
         cmd.push_str(format!(" {} {}", self.main, self.args).as_str());
@@ -166,23 +165,48 @@ pub fn get_modslist(chosen_proj: CFFile, instance: Instance) {
     fs::remove_file(download_path.clone()).expect("Error deleting stage zip file");
 }
 
-pub fn get_class_paths(libdir: PathBuf) -> Vec<PathBuf> {
+
+pub fn get_cp_from_version(libpath: PathBuf, version_paths : Vec<PathBuf>) -> Vec<PathBuf> {
     let mut retvec = Vec::new();
-    for entry in WalkDir::new(libdir)
-        .follow_links(true)
-        .into_iter()
-        .filter_map(|e| e.ok())
-    {
-        let f_name = entry.file_name().to_string_lossy();
-        if f_name.ends_with(".jar") {
-            let fpbuf = entry.path().to_path_buf();
-            retvec.push(fpbuf);
+
+    for version_fpath in version_paths {
+        let file = File::open(version_fpath).unwrap();
+        let reader = BufReader::new(file);
+
+        // Read the JSON contents of the file as an instance of `User`.
+        let u : serde_json::Value = serde_json::from_reader(reader).unwrap();
+
+        let libraries = u["libraries"].as_array().unwrap();
+        for lib in libraries {
+            let mut path = libpath.clone();
+            path.push(lib["downloads"]["artifact"]["path"].as_str()
+                      .expect("Couldn't get libraries from version.json"));
+            retvec.push(path);
         }
     }
+
     retvec
+    
 }
 
-pub fn handle_auth() {
+
+//pub fn get_class_paths(libdir: PathBuf) -> Vec<PathBuf> {
+//    let mut retvec = Vec::new();
+//    for entry in WalkDir::new(libdir)
+//        .follow_links(true)
+//        .into_iter()
+//        .filter_map(|e| e.ok())
+//    {
+//        let f_name = entry.file_name().to_string_lossy();
+//        if f_name.ends_with(".jar") {
+//            let fpbuf = entry.path().to_path_buf();
+//            retvec.push(fpbuf);
+//        }
+//    }
+//    retvec
+//}
+
+pub fn handle_auth() -> Option<User> {
     let mut email: String = "".to_string();
 
     print!("Log in to mojang\nEmail: ");
@@ -199,11 +223,13 @@ pub fn handle_auth() {
 
     let password: String = read_password().unwrap();
 
-    let user = authorize(email.as_str(), password.as_str()).unwrap();
-    println!(
-        "Got access token : {} \n Got username: {} \n",
-        user.token, user.name
-    );
+    let user = authorize(email.as_str(), password.as_str());
+    if user.is_none() {
+        handle_auth()
+    }else {
+        Some(user.unwrap())
+    }
+
 }
 
 pub fn authorize(email: &str, password: &str) -> Option<User> {
@@ -236,7 +262,7 @@ pub fn authorize(email: &str, password: &str) -> Option<User> {
                     .expect("Error parsing json")
                     .to_string(),
             })
-        }
+        },
         Err(ureq::Error::Status(code, resp)) => {
             println!("Got status {}", code);
             println!("Response: {}", resp.into_string().unwrap());

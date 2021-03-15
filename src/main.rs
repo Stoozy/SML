@@ -51,8 +51,7 @@ fn main() {
         Some(id) => {
             let mut proj = cf::CFProject::new(
                 id.parse::<u64>().expect("Not a valid id"),
-                "https://api.cfwidget.com/".to_string(),
-            );
+                "https://api.cfwidget.com/".to_string());
 
             let choice = proj.get_choice();
             let instance = ima
@@ -71,18 +70,39 @@ fn main() {
             let mut assetspath = instance.get_path().clone();
             assetspath.push("assets/");
 
-            let classpaths = sml::get_class_paths(libpath);
+            let mut version_paths = Vec::new();
+            
+            // get this programatically later
+            let mut forge_version_path = instance.get_path().clone();
+            forge_version_path.push("versions/1.16.4-forge-35.1.4/1.16.4-forge-35.1.4.json");
+
+            let mut vanilla_version_path = instance.get_path().clone();
+            vanilla_version_path.push("versions/1.16.4/1.16.4.json");
+
+            version_paths.push(forge_version_path);
+            version_paths.push(vanilla_version_path);
+
+            let classpaths = sml::get_cp_from_version(libpath, version_paths);
+
+            let user =  sml::handle_auth().expect("Couldn't get access token");
+            let access_token = user.token;
+
 
             let mut invoker = Invoker::new(
-                "java".to_string(),
+                "java -Dminecraft.launcher.brand=minecraft-launcher -Dminecraft.launcher.version=2.2.2012".to_string(),
                 binpath,
                 classpaths,
-                format!("--launchTarget fmlclient  --fml.forgeVersion 35.1.4 --fml.mcVersion 1.16.4 --fml.forgeGroup net.minecraftforge --fml.mcpVersion 20201102.104115 --assetsDir \"{}\" --gameDir \"{}\" --version  {}", assetspath.display(), instance.get_path().display(), proj.files[choice].version),
+                format!("--launchTarget fmlclient  --fml.forgeVersion 35.1.4 --fml.mcVersion 1.16.4 --fml.forgeGroup net.minecraftforge --fml.mcpVersion 20201102.104115 --assetsDir \"{}\" --gameDir \"{}\" --version  {} --accessToken {}", assetspath.display(), instance.get_path().display(), proj.files[choice].version, access_token),
                 "cpw.mods.modlauncher.Launcher".to_string(),
                 );
 
+
+
             invoker.gen_invocation();
             invoker.display_invocation();
+
+
+
         },
         None => {
             sml::handle_auth();
