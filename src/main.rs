@@ -10,10 +10,11 @@ mod ima;
 mod sml;
 
 use clap::*;
-use downloader::Downloader;
+
 use ima::InstanceManager;
 use sml::Invoker;
-use zip::ZipArchive;
+use std::io;
+use std::io::Write;
 
 fn get_instances_path() -> Option<PathBuf> {
     std::env::current_exe().ok().and_then(|mut pb| {
@@ -82,9 +83,9 @@ fn main() {
 
             invoker.gen_invocation();
             invoker.display_invocation();
-        }
+        },
         None => {
-            println!("No id was provided.");
+            sml::handle_auth();
         }
-    }
+    };
 }

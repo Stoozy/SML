@@ -26,9 +26,9 @@ impl Downloader {
     pub fn download(&mut self) -> Result<(), ureq::Error> {
         let fp = self.file_path.clone();
         File::create(fp.clone()).expect("Error creating file");
-        let fs = self.get_file_size();
+        let _fs = self.get_file_size();
 
-        let mut body = ureq::get(self.url.as_str()).call().unwrap();
+        let body = ureq::get(self.url.as_str()).call().unwrap();
         let total_size = body
             .header("Content-length")
             .unwrap()

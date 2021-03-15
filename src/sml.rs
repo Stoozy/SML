@@ -3,12 +3,20 @@ use crate::downloader::Downloader;
 use crate::ima::Instance;
 use ftp::FtpStream;
 use indicatif::{ProgressBar, ProgressStyle};
+use rpassword::read_password;
+use serde_json::*;
+use std::io;
 use std::io::Write;
 use std::{fs, path::PathBuf};
 use walkdir::WalkDir;
 use zip::ZipArchive;
 
 const CHUNK_SIZE: usize = 8192;
+
+pub struct User {
+    pub name: String,
+    pub token: String,
+}
 
 pub enum InvokerError {
     CommandNotFound,
@@ -57,11 +65,9 @@ impl Invoker {
         println!("{}", self.ccmd.clone().unwrap());
     }
 
-    pub fn invoke(&self) -> Result<(), InvokerError> {
+    pub fn invoke(&self) -> Result<()> {
         // make sure command is not empty
-        if self.ccmd.is_none() {
-            return Err(InvokerError::CommandNotFound);
-        }
+        if self.ccmd.is_none() {}
 
         Ok(())
 
@@ -173,6 +179,77 @@ pub fn get_class_paths(libdir: PathBuf) -> Vec<PathBuf> {
             retvec.push(fpbuf);
         }
     }
-
     retvec
+}
+
+pub fn handle_auth() {
+    let mut email: String = "".to_string();
+
+    print!("Log in to mojang\nEmail: ");
+
+    io::stdout().flush().unwrap();
+
+    io::stdin().read_line(&mut email).unwrap();
+
+    email = email.trim_end().to_string();
+
+    io::stdout().flush().unwrap();
+    print!("Password: ");
+    io::stdout().flush().unwrap();
+
+    let password: String = read_password().unwrap();
+
+    let user = authorize(email.as_str(), password.as_str()).unwrap();
+    println!(
+        "Got access token : {} \n Got username: {} \n",
+        user.token, user.name
+    );
+}
+
+pub fn authorize(email: &str, password: &str) -> Option<User> {
+    let payload = serde_json::json!(
+    {
+        "agent" : {
+            "name": "Minecraft",
+            "version" : 1
+        },
+        "username" : email,
+        "password" : password
+    });
+
+    // send payload here
+    match ureq::post("https://authserver.mojang.com/authenticate").send_json(payload) {
+        Ok(userinfo) => {
+            let userinfo_json: serde_json::Value =
+                userinfo.into_json().expect("Error parsing auth json");
+            let pj = serde_json::to_string(&userinfo_json).unwrap();
+            println!("Response");
+            println!("{}", pj);
+
+            let access_token = userinfo_json["accessToken"].clone();
+            let username = userinfo_json["selectedProfile"]["name"].clone();
+
+            Some(User {
+                name: username.as_str().expect("Error parsing json").to_string(),
+                token: access_token
+                    .as_str()
+                    .expect("Error parsing json")
+                    .to_string(),
+            })
+        }
+        Err(ureq::Error::Status(code, resp)) => {
+            println!("Got status {}", code);
+            println!("Response: {}", resp.into_string().unwrap());
+
+            if code == 403 {
+                handle_auth();
+                println!("Invalid credentials. Please try again.");
+                None
+            } else {
+                handle_auth();
+                None
+            }
+        }
+        Err(_) => None,
+    }
 }
