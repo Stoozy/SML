@@ -8,7 +8,6 @@ use serde_json::*;
 use std::{fs::File, io::{self, BufReader}};
 use std::io::Write;
 use std::{fs, path::PathBuf};
-use walkdir::WalkDir;
 use zip::ZipArchive;
 
 const CHUNK_SIZE: usize = 8192;
@@ -18,9 +17,6 @@ pub struct User {
     pub token: String,
 }
 
-pub enum InvokerError {
-    CommandNotFound,
-}
 
 pub struct Invoker {
     java: String,
@@ -107,13 +103,14 @@ pub fn get_stage(chosen_proj: CFFile, instance: Instance) {
                 .simple_retr(stage_file_remote_path.as_str())
                 .unwrap()
                 .into_inner();
+
             for i in 0..data.len() / CHUNK_SIZE {
                 if i != (data.len() / CHUNK_SIZE) - 1 {
-                    file.write_all(&data[i * CHUNK_SIZE..(i + 1) * CHUNK_SIZE]);
+                    file.write_all(&data[i * CHUNK_SIZE..(i + 1) * CHUNK_SIZE]).unwrap();
                     pb.set_position((i * CHUNK_SIZE) as u64);
                 } else {
                     // write the entire last part
-                    file.write_all(&data[i * CHUNK_SIZE..]);
+                    file.write_all(&data[i * CHUNK_SIZE..]).unwrap();
                     pb.set_position((i * CHUNK_SIZE) as u64);
                 }
             }
@@ -189,22 +186,36 @@ pub fn get_cp_from_version(libpath: PathBuf, version_paths : Vec<PathBuf>) -> Ve
     
 }
 
+pub fn get_assets(game_path: PathBuf, version_path: PathBuf) -> Result<()> {
+    let version_file = File::open(version_path).unwrap();
+    let version : serde_json::Value = serde_json::from_reader(version_file).unwrap();
 
-//pub fn get_class_paths(libdir: PathBuf) -> Vec<PathBuf> {
-//    let mut retvec = Vec::new();
-//    for entry in WalkDir::new(libdir)
-//        .follow_links(true)
-//        .into_iter()
-//        .filter_map(|e| e.ok())
-//    {
-//        let f_name = entry.file_name().to_string_lossy();
-//        if f_name.ends_with(".jar") {
-//            let fpbuf = entry.path().to_path_buf();
-//            retvec.push(fpbuf);
-//        }
-//    }
-//    retvec
-//}
+    let url = version["assetIndex"]["url"].as_str().unwrap();
+    let assets_json : serde_json::Value = ureq::get(url)
+                            .call()
+                            .unwrap()
+                            .into_json()
+                            .unwrap();
+
+    let asset_objects = assets_json["objects"].as_object().unwrap();
+
+    for object in asset_objects{
+        let hash = object.1["hash"].as_str().unwrap();
+        let first_two = &hash[0..2];
+
+        let mut save_path = game_path.clone();
+        save_path.push("assets/objects/");
+        save_path.push(first_two);
+        save_path.push(hash);
+
+        let download_url = format!("http://resources.download.minecraft.net/{}/{}", first_two, hash);
+        println!("Got url: {}", download_url);
+        let mut downloader = Downloader::new(download_url, save_path);
+        downloader.download().expect("Couldn't download assets");
+    }
+    
+    Ok(())
+}
 
 pub fn handle_auth() -> Option<User> {
     let mut email: String = "".to_string();
@@ -248,9 +259,6 @@ pub fn authorize(email: &str, password: &str) -> Option<User> {
         Ok(userinfo) => {
             let userinfo_json: serde_json::Value =
                 userinfo.into_json().expect("Error parsing auth json");
-            let pj = serde_json::to_string(&userinfo_json).unwrap();
-            println!("Response");
-            println!("{}", pj);
 
             let access_token = userinfo_json["accessToken"].clone();
             let username = userinfo_json["selectedProfile"]["name"].clone();
@@ -268,14 +276,13 @@ pub fn authorize(email: &str, password: &str) -> Option<User> {
             println!("Response: {}", resp.into_string().unwrap());
 
             if code == 403 {
-                handle_auth();
-                println!("Invalid credentials. Please try again.");
-                None
+                return handle_auth();
             } else {
-                handle_auth();
-                None
+                return handle_auth();
             }
         }
-        Err(_) => None,
+        Err(_) => {
+            return handle_auth();
+        }
     }
 }

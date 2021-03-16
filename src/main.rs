@@ -13,8 +13,6 @@ use clap::*;
 
 use ima::InstanceManager;
 use sml::Invoker;
-use std::io;
-use std::io::Write;
 
 fn get_instances_path() -> Option<PathBuf> {
     std::env::current_exe().ok().and_then(|mut pb| {
@@ -57,7 +55,8 @@ fn main() {
             let instance = ima
                 .create_instance(proj.files[choice].display.clone())
                 .expect("Error creating instance");
-
+           
+            //sml::get_assets(instance.get_path().clone(), vanilla_version_path.clone()).unwrap();
             sml::get_stage(proj.files[choice].clone(), instance.clone());
             sml::get_modslist(proj.files[choice].clone(), instance.clone());
 
@@ -76,9 +75,10 @@ fn main() {
             let mut forge_version_path = instance.get_path().clone();
             forge_version_path.push("versions/1.16.4-forge-35.1.4/1.16.4-forge-35.1.4.json");
 
+ 
             let mut vanilla_version_path = instance.get_path().clone();
             vanilla_version_path.push("versions/1.16.4/1.16.4.json");
-
+            
             version_paths.push(forge_version_path);
             version_paths.push(vanilla_version_path);
 
@@ -88,13 +88,22 @@ fn main() {
             let access_token = user.token;
 
 
+            let mut vanilla_version_path = instance.get_path().clone();
+            vanilla_version_path.push("versions/1.16.4/1.16.4.json");
+
+            let mut asset_index = proj.files[choice].version.clone();
+            // remove the last . and number
+            asset_index.remove(asset_index.len()-1);
+            asset_index.remove(asset_index.len()-1);
+
             let mut invoker = Invoker::new(
                 "java -Dminecraft.launcher.brand=minecraft-launcher -Dminecraft.launcher.version=2.2.2012".to_string(),
                 binpath,
                 classpaths,
-                format!("--launchTarget fmlclient  --fml.forgeVersion 35.1.4 --fml.mcVersion 1.16.4 --fml.forgeGroup net.minecraftforge --fml.mcpVersion 20201102.104115 --assetsDir \"{}\" --gameDir \"{}\" --version  {} --accessToken {}", assetspath.display(), instance.get_path().display(), proj.files[choice].version, access_token),
+                format!("--launchTarget fmlclient  --fml.forgeVersion 35.1.4 --fml.mcVersion 1.16.4 --fml.forgeGroup net.minecraftforge --fml.mcpVersion 20201102.104115 --assetsDir \"{}\" --assetIndex {} --gameDir \"{}\" --version  {} --accessToken {} --versionType release --userType mojang", assetspath.display(), asset_index, instance.get_path().display(), proj.files[choice].version, access_token),
                 "cpw.mods.modlauncher.Launcher".to_string(),
                 );
+
 
 
 
