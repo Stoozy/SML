@@ -9,9 +9,13 @@ use std::{fs::File, io::{self, BufReader}};
 use std::io::Write;
 use std::{fs, path::PathBuf};
 use zip::ZipArchive;
+use serde::{ Serialize, Deserialize};
 
 const CHUNK_SIZE: usize = 8192;
 
+
+// needed for serde json serialization
+#[derive(Serialize, Deserialize)]
 pub struct User {
     pub name: String,
     pub token: String,
@@ -254,10 +258,11 @@ pub fn get_mods(mods_path: PathBuf){
                download_path.push(cf_file.name);
     
                // if one mod errors, then continue with the rest
+               // TODO: Track and display broken files 
                let mut downloader = Downloader::new(download_url, download_path);
                match downloader.download(){
-                   Ok() => continue,
-                   Err(ureq::Error::Status(code, resp)) => continue,
+                   Ok(_) => continue,
+                   Err(ureq::Error::Status(_, _)) => continue,
                    Err(_) => continue,
 
                }
@@ -279,13 +284,11 @@ pub fn handle_auth() -> Option<User> {
 
     email = email.trim_end().to_string();
 
-    io::stdout().flush().unwrap();
-    print!("Password: ");
-    io::stdout().flush().unwrap();
 
-    let password: String = read_password().unwrap();
+    let password: String = rpassword::prompt_password_stdout("Password: ").unwrap();
 
     let user = authorize(email.as_str(), password.as_str());
+
     if user.is_none() {
         handle_auth()
     }else {
@@ -323,8 +326,10 @@ pub fn authorize(email: &str, password: &str) -> Option<User> {
             })
         },
         Err(ureq::Error::Status(code, resp)) => {
+
+            let err_json : serde_json::Value = resp.into_json().unwrap();
             println!("Got status {}", code);
-            println!("Response: {}", resp.into_string().unwrap());
+            println!("{}", err_json["ForbiddenOperationException"].as_str().unwrap());
 
             if code == 403 {
                 return handle_auth();

@@ -1,7 +1,7 @@
 extern crate clap;
 extern crate ftp;
 
-use std::fs;
+use std::fs::{self, File, OpenOptions};
 use std::path::PathBuf;
 
 mod cf;
@@ -11,6 +11,7 @@ mod sml;
 
 use clap::*;
 
+use std::io::Write;
 use ima::InstanceManager;
 use sml::Invoker;
 
@@ -31,19 +32,53 @@ fn get_instances_path() -> Option<PathBuf> {
 fn main() {
     let mut ima = InstanceManager::new(get_instances_path().unwrap());
 
+    let mut user_path = get_instances_path().unwrap().clone();
+    user_path.push("userinfo.json");
+
+    if user_path.exists() {
+        let user_file = File::open(user_path.clone()).unwrap();
+    }else{
+        File::create(user_path.clone()).unwrap();
+    };
+
+
     // create new app
     let app = App::new("SML")
         .version("1.0")
         .author("Stoozy")
         .about("A Minecraft Modded Launcher CLI")
-        .arg(
-            Arg::with_name("id")
-                .short("i")
-                .long("id")
-                .help("Searches for project in curseforge with given id")
-                .takes_value(true),
-        )
+        .arg(Arg::with_name("id")
+             .short("i")
+             .long("id")
+             .help("Searches for project in curseforge with given id")
+             .takes_value(true))
+        .arg(Arg::with_name("authenticate")
+             .short("a")
+             .long("auth")
+             .help("Log in through mojang")
+             .takes_value(false))
         .get_matches();
+
+    if app.is_present("authenticate"){
+        let user = sml::handle_auth().expect("Failed authentication");
+
+        println!("Authentication successful!");
+        std::io::stdout().flush().unwrap();
+
+        let user_data = serde_json::to_string(&user).expect("Couldn't parse username and token");
+        let mut user_file = OpenOptions::new()
+            .append(true)
+            .read(true)
+            .write(true)
+            .open(user_path.clone())
+            .expect("Couldn't get user info file");
+
+        match user_file.write_all(user_data.as_bytes()){
+            Ok(_) => {},
+            Err(e) => println!("{}", e),
+        }
+    }
+    
 
     match app.value_of("id") {
         Some(id) => {
@@ -119,8 +154,6 @@ fn main() {
 
 
         },
-        None => {
-            sml::handle_auth();
-        }
+        None => {}
     };
 }
