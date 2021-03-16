@@ -40,15 +40,20 @@ impl Downloader {
 
         File::create(fp.clone()).expect("Error creating file");
 
-        let body = ureq::get(self.url.as_str()).call().unwrap();
-        let total_size = body
-            .header("Content-length")
-            .unwrap()
-            .trim()
-            .parse::<u64>()
-            .unwrap();
-
-        let mut reader = body.into_reader();
+        let body : Option<ureq::Response> = match ureq::get(self.url.as_str()).call(){
+            Ok(resp) => Some(resp),
+            Err(ureq::Error::Status(code, response)) => {
+                println!("Failed download, trying again...");
+                self.download();
+                None
+            },
+            Err(_) => {
+                println!("Failed download, trying again...");
+                self.download();
+                None
+            }
+        };
+        let mut reader = body.unwrap().into_reader();
 
         let mut file = OpenOptions::new()
             .read(true)
@@ -56,26 +61,27 @@ impl Downloader {
             .open(fp.clone())
             .unwrap();
 
+        let mut data : Vec<u8> =  Vec::new();
+        reader.read_to_end(&mut data).expect("Error reading file");
 
-        let pb = ProgressBar::new(total_size);
+        let pb = ProgressBar::new(data.len() as u64);
 
         pb.set_style(ProgressStyle::default_bar()
             .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})")
 .progress_chars("=> "));
 
-        let mut data : Vec<u8> =  Vec::new();
-        reader.read_to_end(&mut data).expect("Error reading file");
+
 
         for i in 0..data.len() / CHUNK_SIZE {
             if i != (data.len() / CHUNK_SIZE) - 1 {
                 file.write_all(&data[i * CHUNK_SIZE..(i + 1) * CHUNK_SIZE])
                         .expect("Error writing to file");
-                pb.set_position((i * CHUNK_SIZE) as u64);
+                pb.set_position(i as u64);
             } else {
                 // write the entire last part
                 file.write_all(&data[i * CHUNK_SIZE..])
                         .expect("Error writing to file");
-                pb.set_position((i * CHUNK_SIZE) as u64);
+                pb.set_position(i as u64);
             }
         }
 

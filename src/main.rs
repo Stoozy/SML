@@ -47,6 +47,7 @@ fn main() {
 
     match app.value_of("id") {
         Some(id) => {
+
             let mut proj = cf::CFProject::new(
                 id.parse::<u64>().expect("Not a valid id"),
                 "https://api.cfwidget.com/".to_string());
@@ -59,6 +60,11 @@ fn main() {
             //sml::get_assets(instance.get_path().clone(), vanilla_version_path.clone()).unwrap();
             sml::get_stage(proj.files[choice].clone(), instance.clone());
             sml::get_modslist(proj.files[choice].clone(), instance.clone());
+
+            let mut mods_path = instance.get_path().clone();
+            mods_path.push("mods/");
+
+            sml::get_mods(mods_path);
 
             let mut libpath = instance.get_path().clone();
             libpath.push("libraries/");

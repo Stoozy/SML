@@ -217,6 +217,51 @@ pub fn get_assets(game_path: PathBuf, version_path: PathBuf) -> Result<()> {
     Ok(())
 }
 
+pub fn get_mods(mods_path: PathBuf){
+    let mut mods_manifest_path = mods_path.clone();
+    mods_manifest_path.push("manifest.json");
+
+    let manifest_reader = File::open(mods_manifest_path).unwrap();
+    let manifest : serde_json::Value = serde_json::from_reader(manifest_reader)
+                                        .expect("Couldn't get mod manifest");
+
+
+    let mods = manifest["files"].as_array().unwrap();
+    
+    for m in mods {
+        let proj_id = m["projectID"].as_u64().unwrap();
+        let file_id = m["fileID"].as_u64().unwrap();
+
+        let mod_json : serde_json::Value = ureq::get(format!("https://api.cfwidget.com/{}", proj_id).as_str())
+                            .call()
+                            .unwrap()
+                            .into_json()
+                            .unwrap();
+        let modfiles = mod_json["files"].as_array().unwrap();
+        for modfile in modfiles {
+            // found right mod file now download it
+            if modfile["id"].as_u64().unwrap() == file_id {
+
+               let cf_file = CFFile{
+                   id: file_id,
+                   display: modfile["display"].as_str().unwrap().to_string(),
+                   name: modfile["name"].as_str().unwrap().to_string(),
+                   ftype: modfile["type"].as_str().unwrap().to_string(),
+                   version: modfile["version"].as_str().unwrap().to_string()};
+
+               let download_url = cf_file.get_download_url();
+               let mut download_path = mods_path.clone();
+               download_path.push(cf_file.name);
+    
+               let mut downloader = Downloader::new(download_url, download_path);
+               downloader.download().expect("Error downloading mod file");
+             }
+        }
+
+    }
+}
+
+
 pub fn handle_auth() -> Option<User> {
     let mut email: String = "".to_string();
 
@@ -286,3 +331,5 @@ pub fn authorize(email: &str, password: &str) -> Option<User> {
         }
     }
 }
+
+
