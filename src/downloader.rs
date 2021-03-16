@@ -40,20 +40,8 @@ impl Downloader {
 
         File::create(fp.clone()).expect("Error creating file");
 
-        let body : Option<ureq::Response> = match ureq::get(self.url.as_str()).call(){
-            Ok(resp) => Some(resp),
-            Err(ureq::Error::Status(code, response)) => {
-                println!("Failed download, trying again...");
-                self.download();
-                None
-            },
-            Err(_) => {
-                println!("Failed download, trying again...");
-                self.download();
-                None
-            }
-        };
-        let mut reader = body.unwrap().into_reader();
+        let body = match ureq::get(self.url.as_str()).call().unwrap();
+        let mut reader = body.into_reader();
 
         let mut file = OpenOptions::new()
             .read(true)
@@ -84,10 +72,6 @@ impl Downloader {
                 pb.set_position(i as u64);
             }
         }
-
-
-        //io::copy(&mut reader, &mut file).expect("Error writing to file");
-        
 
 
         pb.finish_with_message("Finished download");

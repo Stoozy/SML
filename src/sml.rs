@@ -253,8 +253,14 @@ pub fn get_mods(mods_path: PathBuf){
                let mut download_path = mods_path.clone();
                download_path.push(cf_file.name);
     
+               // if one mod errors, then continue with the rest
                let mut downloader = Downloader::new(download_url, download_path);
-               downloader.download().expect("Error downloading mod file");
+               match downloader.download(){
+                   Ok() => continue,
+                   Err(ureq::Error::Status(code, resp)) => continue,
+                   Err(_) => continue,
+
+               }
              }
         }
 
