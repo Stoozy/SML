@@ -180,8 +180,14 @@ pub fn get_cp_from_version(libpath: PathBuf, version_paths : Vec<PathBuf>) -> Ve
         let libraries = u["libraries"].as_array().unwrap();
         for lib in libraries {
             let mut path = libpath.clone();
-            path.push(lib["downloads"]["artifact"]["path"].as_str()
-                      .expect("Couldn't get libraries from version.json"));
+            path.push( match lib["downloads"]["artifact"]["path"].as_str(){
+                Some(val) =>  val,
+                None => {
+                    println!("Couldn't get library path, skipping");
+                    break;
+                },
+            });
+            
             retvec.push(path);
         }
     }
@@ -205,15 +211,24 @@ pub fn get_libraries(libpath: PathBuf, manifests: Vec<PathBuf>) -> Result<()> {
 
         for lib in libraries.iter(){
 
-            let artifact_path = lib["downloads"]["artifact"]["path"]
-                .as_str()
-                .unwrap();
+            let artifact_path = match lib["downloads"]["artifact"]["path"].as_str(){
+                Some(val) => val,
+                None => {
+                    println!("Error getting library, skipping ...");
+                    break;
+                }
+            };
             let mut path = libpath.clone(); 
             path.push(artifact_path);
 
-            let download_url = lib["downloads"]["artifact"]["url"]
-                .as_str()
-                .unwrap();
+            let download_url = match lib["downloads"]["artifact"]["url"].as_str(){
+                Some(val) => val,
+                None => {
+                    println!("Error getting library, skipping ...");
+                    break;
+                }
+
+            };
 
             let mut downloader = Downloader::new(download_url.to_string(), PathBuf::from(path));
             match downloader.download() {
@@ -234,7 +249,13 @@ pub fn get_assets(game_path: PathBuf, version_path: PathBuf) -> Result<()> {
     let version_file = File::open(version_path).unwrap();
     let version : serde_json::Value = serde_json::from_reader(version_file).unwrap();
 
-    let url = version["assetIndex"]["url"].as_str().unwrap();
+    let url = match version["assetIndex"]["url"].as_str(){
+        Some(val) => val,
+        None => {
+            println!("Error getting assetIndex. Skipping.");
+            return Ok(());
+        }
+    };
     let assets_json : serde_json::Value = ureq::get(url)
                             .call()
                             .unwrap()
@@ -281,7 +302,14 @@ pub fn get_mods(mods_path: PathBuf){
                             .unwrap()
                             .into_json()
                             .unwrap();
-        let modfiles = mod_json["files"].as_array().unwrap();
+        let modfiles = match mod_json["files"].as_array(){
+            Some(val) => val,
+            None => {
+                println!("Could not parse files list");
+                continue;
+            } 
+        };
+
         for modfile in modfiles {
             // found right mod file now download it
             if modfile["id"].as_u64().unwrap() == file_id {
