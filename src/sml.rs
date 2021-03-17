@@ -5,7 +5,7 @@ use ftp::FtpStream;
 use indicatif::{ProgressBar, ProgressStyle};
 use rpassword::read_password;
 use serde_json::*;
-use std::{fs::File, io::{self, BufReader}};
+use std::{fs::{File, OpenOptions}, io::{self, BufReader}};
 use std::io::Write;
 use std::{fs, path::PathBuf};
 use zip::ZipArchive;
@@ -190,6 +190,46 @@ pub fn get_cp_from_version(libpath: PathBuf, version_paths : Vec<PathBuf>) -> Ve
     
 }
 
+pub fn get_libraries(libpath: PathBuf, manifests: Vec<PathBuf>) -> Result<()> {
+    for manifest in manifests{
+
+    let mut file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(manifest.clone())
+        .unwrap();
+
+
+        let json: serde_json::Value = serde_json::from_reader(file).unwrap();
+        let libraries = json["libraries"].as_array().expect("Error getting libraries.");
+
+        for lib in libraries.iter(){
+
+            let artifact_path = lib["downloads"]["artifact"]["path"]
+                .as_str()
+                .unwrap();
+            let mut path = libpath.clone(); 
+            path.push(artifact_path);
+
+            let download_url = lib["downloads"]["artifact"]["url"]
+                .as_str()
+                .unwrap();
+
+            let mut downloader = Downloader::new(download_url.to_string(), PathBuf::from(path));
+            match downloader.download() {
+                Ok(_) => continue,
+                Err(_) => {
+                    println!("Failed to download {}", artifact_path);
+                    continue
+                }
+            };
+        }
+
+    }
+
+    Ok(())
+}
+
 pub fn get_assets(game_path: PathBuf, version_path: PathBuf) -> Result<()> {
     let version_file = File::open(version_path).unwrap();
     let version : serde_json::Value = serde_json::from_reader(version_file).unwrap();
@@ -329,7 +369,6 @@ pub fn authorize(email: &str, password: &str) -> Option<User> {
 
             let err_json : serde_json::Value = resp.into_json().unwrap();
             println!("Got status {}", code);
-            println!("{}", err_json["ForbiddenOperationException"].as_str().unwrap());
 
             if code == 403 {
                 return handle_auth();
@@ -342,5 +381,22 @@ pub fn authorize(email: &str, password: &str) -> Option<User> {
         }
     }
 }
+
+
+pub fn get_fv_from_mcv(mcv: String) -> String {
+    let versions_url = "https://files.minecraftforge.net/maven/net/minecraftforge/forge/promotions_slim.json"; 
+    let versions_json : serde_json::Value = ureq::get(versions_url)
+                                            .call()
+                                            .unwrap()
+                                            .into_json()
+                                            .unwrap();
+    let key = format!("{}-latest", mcv);
+    versions_json["promos"][key]
+        .as_str()
+        .expect("Couldn't get forge versions list")
+        .to_string()
+
+}
+
 
 

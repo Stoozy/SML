@@ -10,10 +10,21 @@ mod ima;
 mod sml;
 
 use clap::*;
+use downloader::Downloader;
+use subprocess::Exec;
 
-use std::io::Write;
+use std::io::{self, Write, Read};
 use ima::InstanceManager;
 use sml::Invoker;
+
+use ansi_term::Colour::Yellow;
+
+fn pause() {
+    let mut stdout = io::stdout();
+    stdout.write(b"Press Enter to continue...").unwrap();
+    stdout.flush().unwrap();
+    io::stdin().read(&mut [0]).unwrap();
+}
 
 fn get_instances_path() -> Option<PathBuf> {
     std::env::current_exe().ok().and_then(|mut pb| {
@@ -35,13 +46,6 @@ fn main() {
     let mut user_path = get_instances_path().unwrap().clone();
     user_path.push("userinfo.json");
 
-    if user_path.exists() {
-        let user_file = File::open(user_path.clone()).unwrap();
-    }else{
-        File::create(user_path.clone()).unwrap();
-    };
-
-
     // create new app
     let app = App::new("SML")
         .version("1.0")
@@ -59,6 +63,7 @@ fn main() {
              .takes_value(false))
         .get_matches();
 
+    // authentication
     if app.is_present("authenticate"){
         let user = sml::handle_auth().expect("Failed authentication");
 
@@ -66,17 +71,7 @@ fn main() {
         std::io::stdout().flush().unwrap();
 
         let user_data = serde_json::to_string(&user).expect("Couldn't parse username and token");
-        let mut user_file = OpenOptions::new()
-            .append(true)
-            .read(true)
-            .write(true)
-            .open(user_path.clone())
-            .expect("Couldn't get user info file");
-
-        match user_file.write_all(user_data.as_bytes()){
-            Ok(_) => {},
-            Err(e) => println!("{}", e),
-        }
+        fs::write(user_path, user_data.as_bytes()).expect("Couldn't save user info");
     }
     
 
@@ -92,13 +87,45 @@ fn main() {
                 .create_instance(proj.files[choice].display.clone())
                 .expect("Error creating instance");
            
-            //sml::get_assets(instance.get_path().clone(), vanilla_version_path.clone()).unwrap();
-            sml::get_stage(proj.files[choice].clone(), instance.clone());
+
+            let mcv = proj.files[choice].version.clone();
+            let fv = sml::get_fv_from_mcv(mcv.clone());
+            let mcv_fv = format!("{}-{}", mcv, fv);
+
+
+            let mut launcher_profiles_path = instance.get_path();
+            launcher_profiles_path.push("launcher_profiles.json");
+            fs::write(launcher_profiles_path, "{}").expect("Error writing to launcher profiles") ;
+
+            // https://files.minecraftforge.net/maven/net/minecraftforge/forge/1.16.5-36.1.0/forge-1.16.5-36.1.0-installer.jar
+
+            let forge_url = format!("https://files.minecraftforge.net/maven/net/minecraftforge/forge/{}/forge-{}-installer.jar", mcv_fv, mcv_fv );
+
+            let mut forge_path = instance.get_path().clone();
+            forge_path.push(format!("forge-{}-installer.jar", mcv_fv ));
+
+            let mut forge_dloader = Downloader::new(forge_url, forge_path.clone());
+            forge_dloader.download().expect("Error downloading forge");
+
+            println!();
+            println!("When you are prompted by forge, {}", Yellow.paint("PASTE THE FOLLOWING DIRECTORY"));
+            println!("{}", instance.get_path().display());
+            println!();
+
+            pause();
+
+            let cmd = format!("java -jar \"{}\"", forge_path.display());
+            Exec::shell(cmd).join().unwrap();
+
+
+            //sml::get_stage(proj.files[choice].clone(), instance.clone());
             sml::get_modslist(proj.files[choice].clone(), instance.clone());
 
             let mut mods_path = instance.get_path().clone();
             mods_path.push("mods/");
 
+
+            println!("{}", Yellow.paint("Getting mods..."));
             sml::get_mods(mods_path);
 
             let mut libpath = instance.get_path().clone();
@@ -112,18 +139,24 @@ fn main() {
 
             let mut version_paths = Vec::new();
             
-            // get this programatically later
-            let mut forge_version_path = instance.get_path().clone();
-            forge_version_path.push("versions/1.16.4-forge-35.1.4/1.16.4-forge-35.1.4.json");
-
+            let mut forge_version_path = instance.get_path(); 
+            forge_version_path.push(format!("versions/{}-forge-{}/{}-forge-{}.json", mcv, fv, mcv, fv));
  
-            let mut vanilla_version_path = instance.get_path().clone();
-            vanilla_version_path.push("versions/1.16.4/1.16.4.json");
-            
+            let mut vanilla_version_path = instance.get_path();
+            vanilla_version_path.push(format!("versions/{}/{}.json", mcv, mcv));
+
+            println!("{}", Yellow.paint("Getting assets..."));
+            sml::get_assets(instance.get_path().clone(), vanilla_version_path.clone()).unwrap();
+
+
             version_paths.push(forge_version_path);
             version_paths.push(vanilla_version_path);
 
-            let classpaths = sml::get_cp_from_version(libpath, version_paths);
+
+            println!("{}", Yellow.paint("Getting libraries..."));
+            sml::get_libraries(libpath.clone(), version_paths.clone()).unwrap();
+
+            let classpaths = sml::get_cp_from_version(libpath.clone(), version_paths.clone());
 
             let user =  sml::handle_auth().expect("Couldn't get access token");
             let access_token = user.token;
