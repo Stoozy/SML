@@ -1,7 +1,7 @@
 extern crate clap;
 extern crate ftp;
 
-use std::fs::{self, File, OpenOptions};
+use std::fs::{self, OpenOptions};
 use std::path::PathBuf;
 
 mod cf;
@@ -15,7 +15,7 @@ use subprocess::Exec;
 
 use std::io::{self, Write, Read};
 use ima::InstanceManager;
-use sml::Invoker;
+use sml::{Invoker, User};
 
 use ansi_term::Colour::Yellow;
 
@@ -43,14 +43,15 @@ fn get_instances_path() -> Option<PathBuf> {
 fn main() {
     let mut ima = InstanceManager::new(get_instances_path().unwrap());
 
-    let mut user_path = get_instances_path().unwrap().clone();
+    let mut user_path = std::env::current_exe().unwrap();
+    user_path.pop(); // get rid of executable
     user_path.push("userinfo.json");
 
     // create new app
     let app = App::new("SML")
         .version("1.0")
         .author("Stoozy")
-        .about("A Minecraft Modded Launcher CLI")
+        .about("A Minecraft Modded Launcher Command Line Interface")
         .arg(Arg::with_name("id")
              .short("i")
              .long("id")
@@ -71,7 +72,8 @@ fn main() {
         std::io::stdout().flush().unwrap();
 
         let user_data = serde_json::to_string(&user).expect("Couldn't parse username and token");
-        fs::write(user_path, user_data.as_bytes()).expect("Couldn't save user info");
+        fs::write(user_path.clone(), user_data.as_bytes()).expect("Couldn't save user info");
+
     }
     
 
@@ -149,32 +151,68 @@ fn main() {
             sml::get_assets(instance.get_path().clone(), vanilla_version_path.clone()).unwrap();
 
 
-            version_paths.push(forge_version_path);
             version_paths.push(vanilla_version_path);
-
+            version_paths.push(forge_version_path);
 
             println!("{}", Yellow.paint("Getting libraries..."));
             sml::get_libraries(libpath.clone(), version_paths.clone()).unwrap();
 
+
             let classpaths = sml::get_cp_from_version(libpath.clone(), version_paths.clone());
 
-            let user =  sml::handle_auth().expect("Couldn't get access token");
-            let access_token = user.token;
+            let access_token = match !user_path.exists(){
+                true => {
+                    let user =  sml::handle_auth().expect("Couldn't get access token");
+
+                    let user_data = serde_json::to_string(&user)
+                        .expect("Couldn't parse username and token");
+                    fs::write(user_path, user_data.as_bytes())
+                        .expect("Couldn't save user info");
+                    user.token
+                },
+                false => { 
+                    let user_file = OpenOptions::new()
+                        .read(true)
+                        .write(true)
+                        .open(user_path.clone())
+                        .unwrap();
+                    let user: User = match serde_json::from_reader(user_file){
+                        Ok(u) => u,
+                        Err(_) => {
+                            println!("Error occured getting user info");
+                            let u = sml::handle_auth().expect("Failed authentication");
+                            
+                            println!("Authentication successful!");
+                            std::io::stdout().flush().unwrap();
+                        
+                            let user_data = serde_json::to_string(&u)
+                                .expect("Couldn't parse username and token");
+                            fs::write(user_path.clone(), user_data.as_bytes())
+                                .expect("Couldn't save user info");
+                            u
+                        },
+                    };
+                    user.token
+                }
+
+            };
+
 
 
             let mut vanilla_version_path = instance.get_path().clone();
-            vanilla_version_path.push("versions/1.16.4/1.16.4.json");
+            vanilla_version_path.push(format!("versions/{}/{}.json", mcv, mcv));
 
             let mut asset_index = proj.files[choice].version.clone();
             // remove the last . and number
             asset_index.remove(asset_index.len()-1);
             asset_index.remove(asset_index.len()-1);
 
+            // TODO: Properly get args
             let mut invoker = Invoker::new(
                 "java -Dminecraft.launcher.brand=minecraft-launcher -Dminecraft.launcher.version=2.2.2012".to_string(),
                 binpath,
                 classpaths,
-                format!("--launchTarget fmlclient  --fml.forgeVersion 35.1.4 --fml.mcVersion 1.16.4 --fml.forgeGroup net.minecraftforge --fml.mcpVersion 20201102.104115 --assetsDir \"{}\" --assetIndex {} --gameDir \"{}\" --version  {} --accessToken {} --versionType release --userType mojang", assetspath.display(), asset_index, instance.get_path().display(), proj.files[choice].version, access_token),
+                format!("--launchTarget fmlclient  --fml.forgeVersion {} --fml.mcVersion {} --fml.forgeGroup net.minecraftforge --fml.mcpVersion 20201102.104115 --assetsDir \"{}\" --assetIndex {} --gameDir \"{}\" --version  {} --accessToken {} --versionType release --userType mojang", fv, mcv, assetspath.display(), asset_index, instance.get_path().display(), proj.files[choice].version, access_token),
                 "cpw.mods.modlauncher.Launcher".to_string(),
                 );
 

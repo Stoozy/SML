@@ -10,6 +10,7 @@ use std::io::Write;
 use std::{fs, path::PathBuf};
 use zip::ZipArchive;
 use serde::{ Serialize, Deserialize};
+use ansi_term::Color::*;
 
 const CHUNK_SIZE: usize = 8192;
 
@@ -224,7 +225,10 @@ pub fn get_libraries(libpath: PathBuf, manifests: Vec<PathBuf>) -> Result<()> {
             let download_url = match lib["downloads"]["artifact"]["url"].as_str(){
                 Some(val) => val,
                 None => {
-                    println!("Error getting library, skipping ...");
+                    println!("{}:{}  {}", 
+                            Red.paint("Error getting library"),
+                            path.display(),
+                            Yellow.paint("skipping ..."));
                     break;
                 }
 
