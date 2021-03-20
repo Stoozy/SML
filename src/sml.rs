@@ -1,5 +1,4 @@
-use crate::cf::CFFile;
-use crate::downloader::Downloader;
+use crate::{cf::CFFile, downloader::Downloader};
 use crate::ima::Instance;
 use ftp::FtpStream;
 use indicatif::{ProgressBar, ProgressStyle};
@@ -212,8 +211,6 @@ pub fn get_libraries(libpath: PathBuf, manifests: Vec<PathBuf>) -> Result<()> {
 
         for lib in libraries.iter(){
 
-            
-             
             let artifact_path = match lib["downloads"]["artifact"]["path"].as_str(){
                 Some(val) => val,
                 None => {
@@ -248,31 +245,33 @@ pub fn get_libraries(libpath: PathBuf, manifests: Vec<PathBuf>) -> Result<()> {
             let mut downloader = Downloader::new(download_url.to_string(), PathBuf::from(path))
                                             .add_sha1(artifact_sha1.to_string());
 
-            match downloader.curl_download() {
-                Ok(_) => {
-                    match downloader.verify_sha1(){
-                        Some(is_verified) => {
-                            while !is_verified {
-                                println!("Invalid hash: {}",  Yellow.paint("Retrying download..."));
-                                match downloader.download(){
-                                    Ok(_) => continue,
-                                    Err(_) => continue,
-                                }
-                                
-                            }
+            // only download if url is valid
+            if download_url != "" {
+                match downloader.download() {
+                    Ok(_) => {
+                        match downloader.verify_sha1(){
+                            Some(mut is_verified) => {
+                                while !is_verified {
+                                    println!("Invalid hash: {}",  Yellow.paint("Retrying download..."));
+                                    println!("URL: {}", download_url);
+                                    downloader.download().unwrap();
+                                    is_verified = downloader.verify_sha1().unwrap();
 
-                            println!("{} sha1:{}", Green.paint("File verified!"),  artifact_sha1);
-                        },
-                        None => {
-                            println!("{}", Red.paint("Failed to verify file"));
-                        }
-                    };
-                },
-                Err(_) => {
-                    println!("{} {}", Red.paint("Failed to download"), artifact_path);
-                    continue
-                }
-            };
+                                }
+
+                                println!("{} sha1:{}", Green.paint("File verified!"),  artifact_sha1);
+                            },
+                            None => {
+                                println!("{}", Red.paint("Failed to verify file"));
+                            }
+                        };
+                    },
+                    Err(_) => {
+                        println!("{} {}", Red.paint("Failed to download"), artifact_path);
+                        continue
+                    }
+                };
+            }
         }
 
     }
@@ -365,7 +364,6 @@ pub fn get_mods(mods_path: PathBuf){
                let mut downloader = Downloader::new(download_url, download_path);
                match downloader.download(){
                    Ok(_) => continue,
-                   Err(ureq::Error::Status(_, _)) => continue,
                    Err(_) => continue,
 
                }

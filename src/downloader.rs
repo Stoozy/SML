@@ -1,5 +1,5 @@
 use crypto::{digest::Digest, sha1::Sha1};
-use curl::easy::Easy;
+use reqwest;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::fs;
 use std::fs::File;
@@ -10,7 +10,7 @@ use ansi_term::Color::*;
 
 extern crate crypto;
 
-const CHUNK_SIZE: usize = 8192;
+const CHUNK_SIZE: usize = 4096;
 
 #[derive(Clone)]
 pub struct Downloader {
@@ -60,95 +60,25 @@ impl Downloader {
     }
 
 
-    pub fn curl_download(&mut self) -> Result<(), curl::Error> {
-
-        let parent_dir = self.file_path.parent().unwrap();
-
-        // create dir if it does not exist
-        if !parent_dir.exists(){
-            fs::create_dir_all(parent_dir).unwrap();
-        }
-
-
-        let mut file_data = Vec::new();
-
-        let mut easy = Easy::new();
-        easy.url(self.url.as_str()).unwrap();
-
-        let mut transfer = easy.transfer();
-        transfer.write_function(|data| {
-            file_data.extend_from_slice(data);
-
-                if !self.file_path.exists() {
-                    // file path DNE
-                    File::create(self.file_path.clone()).expect("Could not create file for download");
-                }
-
-                let mut file = OpenOptions::new()
-                    .read(true)
-                    .write(true)
-                    .open(self.file_path.clone())
-                    .unwrap();
-
-
-                let pb = ProgressBar::new(file_data.len() as u64);
-
-                pb.set_style(ProgressStyle::default_bar()
-                    .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})")
-                    .progress_chars("=> "));
-
-                for i in 0..file_data.len() / CHUNK_SIZE {
-                    if i != (file_data.len() / CHUNK_SIZE) - 1 {
-                        file.write_all(&file_data[i * CHUNK_SIZE..(i + 1) * CHUNK_SIZE])
-                                .expect("Error writing to file");
-                    } else {
-                        // write the entire last part
-                        file.write_all(&file_data[i * CHUNK_SIZE..])
-                                .expect("Error writing to file");
-                    }
-
-                    pb.set_position(i as u64);
-                }
-
-                pb.finish_with_message("Finished download");
-                
-            Ok(data.len())
-        }).unwrap();
-
-
-
-            
-
-        match transfer.perform(){
-           Ok(_) =>(), 
-           Err(e) =>{
-                println!("Download failed");
-                return Err(e);
-           }
-
-        }
-
-
-        Ok(())
-    }
-
-    pub fn download(&mut self) -> Result<(), ureq::Error> {
+    pub fn download(&mut self) -> Result<(), reqwest::Error> {
         let fp = self.file_path.clone();
         println!("Downloading {}", fp.display());
 
+        // if parent dir doesn't exist
+        // recursively create all of them
         let parent = self.file_path.parent().unwrap();
-
         if !parent.exists() {
             fs::create_dir_all(parent).expect("Couldn't create parent directories");
         }
 
-
+        // create file 
         File::create(fp.clone()).expect("Error creating file");
 
-        match ureq::get(self.url.as_str()).call(){
-            Ok(body)  => {
-
-                let mut reader = body.into_reader();
+        match reqwest::blocking::get(self.url.as_str())
+                                    .unwrap()
+                                    .bytes()
+        {
+            Ok(data)  => {
 
                 let mut file = OpenOptions::new()
                     .read(true)
@@ -156,8 +86,6 @@ impl Downloader {
                     .open(fp.clone())
                     .unwrap();
 
-                let mut data : Vec<u8> =  Vec::new();
-                reader.read_to_end(&mut data).expect("Error reading file");
 
                 let pb = ProgressBar::new(data.len() as u64);
 
@@ -166,32 +94,22 @@ impl Downloader {
 .progress_chars("=> "));
 
 
-
                 for i in 0..data.len() / CHUNK_SIZE {
                     if i != (data.len() / CHUNK_SIZE) - 1 {
                         file.write_all(&data[i * CHUNK_SIZE..(i + 1) * CHUNK_SIZE])
                                 .expect("Error writing to file");
-                        pb.set_position(i as u64);
                     } else {
                         // write the entire last part
                         file.write_all(&data[i * CHUNK_SIZE..])
                                 .expect("Error writing to file");
-                        pb.set_position(i as u64);
                     }
+
+                        pb.set_position(i as u64);
                 }
 
-
                 pb.finish_with_message("Finished download");
-
             },
-
-            Err(ureq::Error::Status(code, resp)) => {
-                println!("Download failed");
-                return Err(ureq::Error::Status(code, resp));
-            },
-
             Err(e) => {
-
                 println!("Download failed");
                 return Err(e);
             }
