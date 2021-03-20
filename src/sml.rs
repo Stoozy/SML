@@ -145,7 +145,9 @@ pub fn get_modslist(chosen_proj: CFFile, instance: Instance) {
     println!("Got download url {}", download_url);
     println!("Got download path {}", download_path.display());
 
-    let mut downloader = Downloader::new(download_url, download_path.clone());
+    let mut downloader = Downloader::new();
+    downloader.set_url(download_url);
+    downloader.set_path(download_path.clone());
     downloader.download().expect("Error downloading modslist");
 
     let mut mod_dirpath = instance.get_path().clone();
@@ -208,6 +210,8 @@ pub fn get_libraries(libpath: PathBuf, manifests: Vec<PathBuf>) -> Result<()> {
 
         let json: serde_json::Value = serde_json::from_reader(file).unwrap();
         let libraries = json["libraries"].as_array().expect("Error getting libraries.");
+        let mut downloader = Downloader::new();
+
 
         for lib in libraries.iter(){
 
@@ -242,11 +246,12 @@ pub fn get_libraries(libpath: PathBuf, manifests: Vec<PathBuf>) -> Result<()> {
                 }
             };
 
-            let mut downloader = Downloader::new(download_url.to_string(), PathBuf::from(path))
-                                            .add_sha1(artifact_sha1.to_string());
-
+            
             // only download if url is valid
             if download_url != "" {
+                downloader.set_url(download_url.to_string());
+                downloader.set_path(path);
+                downloader.set_sha1(artifact_sha1.to_string());
                 match downloader.download() {
                     Ok(_) => {
                         match downloader.verify_sha1(){
@@ -309,7 +314,9 @@ pub fn get_assets(game_path: PathBuf, version_path: PathBuf) -> Result<()> {
 
         let download_url = format!("http://resources.download.minecraft.net/{}/{}", first_two, hash);
         println!("Got url: {}", download_url);
-        let mut downloader = Downloader::new(download_url, save_path);
+        let mut downloader = Downloader::new();
+        downloader.set_path(save_path);
+        downloader.set_url(download_url);
         downloader.download().expect("Couldn't download assets");
     }
     
@@ -361,7 +368,9 @@ pub fn get_mods(mods_path: PathBuf){
     
                // if one mod errors, then continue with the rest
                // TODO: Track and display broken files 
-               let mut downloader = Downloader::new(download_url, download_path);
+               let mut downloader = Downloader::new();
+               downloader.set_path(download_path);
+               downloader.set_url(download_url);
                match downloader.download(){
                    Ok(_) => continue,
                    Err(_) => continue,

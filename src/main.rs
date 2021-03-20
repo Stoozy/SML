@@ -106,7 +106,9 @@ fn main() {
             let mut forge_path = instance.get_path().clone();
             forge_path.push(format!("forge-{}-installer.jar", mcv_fv ));
 
-            let mut forge_dloader = Downloader::new(forge_url, forge_path.clone());
+            let mut forge_dloader = Downloader::new();
+            forge_dloader.set_url(forge_url);
+            forge_dloader.set_path(forge_path.clone());
             forge_dloader.download().expect("Error downloading forge");
 
             println!();

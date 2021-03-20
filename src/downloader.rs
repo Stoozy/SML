@@ -1,7 +1,7 @@
 use crypto::{digest::Digest, sha1::Sha1};
-use reqwest;
+use reqwest::{ClientBuilder, blocking::Client};
 use indicatif::{ProgressBar, ProgressStyle};
-use std::fs;
+use std::{fs, time::Duration};
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::{ Read, Write};
@@ -14,27 +14,37 @@ const CHUNK_SIZE: usize = 4096;
 
 #[derive(Clone)]
 pub struct Downloader {
-    url: String,
-    file_path: PathBuf,
+    client : reqwest::blocking::Client,
+    url: Option<String>,
+    file_path: Option<PathBuf>,
     sha1: Option<String>,
 }
 
 impl Downloader {
-    pub fn new(u: String, fp: PathBuf) -> Downloader {
-        Downloader {
-            url: u,
-            file_path: fp,
-            sha1: None
-        }
+    pub fn new () -> Downloader {
+        let c = reqwest::blocking::ClientBuilder::new()
+                            .timeout(Duration::from_secs(100))
+                            .build()
+                            .unwrap();
+        Downloader {client: c, url: None, file_path: None, sha1: None}
     }
 
-    pub fn add_sha1(&mut self, s : String) -> Downloader{
+    pub fn set_url(&mut self, u: String) -> () {
+        self.url = Some(u);
+    }
+
+    pub fn set_path(&mut self, fp: PathBuf)-> () {
+        self.file_path = Some(fp);
+    }
+
+    pub fn set_sha1(&mut self, s : String) -> Downloader{
         self.sha1 = Some(s); 
         self.clone()
     }
 
     // Verify file integrity
-    pub fn verify_sha1(&self) -> Option<bool> {
+    pub fn verify_sha1(& self) -> Option<bool> {
+        let fp = self.file_path.clone().unwrap();
         if self.sha1.is_none() {
             return None;
         } 
@@ -43,7 +53,7 @@ impl Downloader {
         let mut file = OpenOptions::new()
                     .read(true)
                     .write(false)
-                    .open(self.file_path.clone())
+                    .open(fp.clone())
                     .unwrap();
         let mut file_data = Vec::new();
         match file.read_to_end(&mut file_data){
@@ -61,20 +71,21 @@ impl Downloader {
 
 
     pub fn download(&mut self) -> Result<(), reqwest::Error> {
-        let fp = self.file_path.clone();
+        let fp = self.file_path.clone().unwrap();
         println!("Downloading {}", fp.display());
-
+        
         // if parent dir doesn't exist
         // recursively create all of them
-        let parent = self.file_path.parent().unwrap();
+        let parent = fp.parent().unwrap();
         if !parent.exists() {
             fs::create_dir_all(parent).expect("Couldn't create parent directories");
         }
 
         // create file 
-        File::create(fp.clone()).expect("Error creating file");
+        File::create(self.file_path.clone().unwrap()).expect("Error creating file");
 
-        match reqwest::blocking::get(self.url.as_str())
+        match self.client.get(self.url.clone().unwrap().as_str())
+                                    .send()
                                     .unwrap()
                                     .bytes()
         {
