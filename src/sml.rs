@@ -212,6 +212,8 @@ pub fn get_libraries(libpath: PathBuf, manifests: Vec<PathBuf>) -> Result<()> {
 
         for lib in libraries.iter(){
 
+            
+             
             let artifact_path = match lib["downloads"]["artifact"]["path"].as_str(){
                 Some(val) => val,
                 None => {
@@ -219,6 +221,7 @@ pub fn get_libraries(libpath: PathBuf, manifests: Vec<PathBuf>) -> Result<()> {
                     break;
                 }
             };
+
             let mut path = libpath.clone(); 
             path.push(artifact_path);
 
@@ -226,7 +229,7 @@ pub fn get_libraries(libpath: PathBuf, manifests: Vec<PathBuf>) -> Result<()> {
                 Some(val) => val,
                 None => {
                     println!("{}:{}  {}", 
-                            Red.paint("Error getting library"),
+                            Red.paint("Library url is missing"),
                             path.display(),
                             Yellow.paint("skipping ..."));
                     break;
@@ -234,11 +237,39 @@ pub fn get_libraries(libpath: PathBuf, manifests: Vec<PathBuf>) -> Result<()> {
 
             };
 
-            let mut downloader = Downloader::new(download_url.to_string(), PathBuf::from(path));
-            match downloader.download() {
-                Ok(_) => continue,
+            let artifact_sha1 = match lib["downloads"]["artifact"]["sha1"].as_str(){
+                Some(hash) => hash,
+                None => {
+                    println!("No hash found , skipping ...");
+                    break;
+                }
+            };
+
+            let mut downloader = Downloader::new(download_url.to_string(), PathBuf::from(path))
+                                            .add_sha1(artifact_sha1.to_string());
+
+            match downloader.curl_download() {
+                Ok(_) => {
+                    match downloader.verify_sha1(){
+                        Some(is_verified) => {
+                            while !is_verified {
+                                println!("Invalid hash: {}",  Yellow.paint("Retrying download..."));
+                                match downloader.download(){
+                                    Ok(_) => continue,
+                                    Err(_) => continue,
+                                }
+                                
+                            }
+
+                            println!("{} sha1:{}", Green.paint("File verified!"),  artifact_sha1);
+                        },
+                        None => {
+                            println!("{}", Red.paint("Failed to verify file"));
+                        }
+                    };
+                },
                 Err(_) => {
-                    println!("Failed to download {}", artifact_path);
+                    println!("{} {}", Red.paint("Failed to download"), artifact_path);
                     continue
                 }
             };

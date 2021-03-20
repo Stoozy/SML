@@ -125,11 +125,6 @@ fn main() {
 
             let mut mods_path = instance.get_path().clone();
             mods_path.push("mods/");
-
-
-            println!("{}", Yellow.paint("Getting mods..."));
-            sml::get_mods(mods_path);
-
             let mut libpath = instance.get_path().clone();
             libpath.push("libraries/");
 
@@ -147,15 +142,21 @@ fn main() {
             let mut vanilla_version_path = instance.get_path();
             vanilla_version_path.push(format!("versions/{}/{}.json", mcv, mcv));
 
-            println!("{}", Yellow.paint("Getting assets..."));
-            sml::get_assets(instance.get_path().clone(), vanilla_version_path.clone()).unwrap();
 
-
-            version_paths.push(vanilla_version_path);
-            version_paths.push(forge_version_path);
+            version_paths.push(vanilla_version_path.clone());
+            version_paths.push(forge_version_path.clone());
 
             println!("{}", Yellow.paint("Getting libraries..."));
             sml::get_libraries(libpath.clone(), version_paths.clone()).unwrap();
+
+
+            println!("{}", Yellow.paint("Getting mods..."));
+            sml::get_mods(mods_path);
+
+
+
+            println!("{}", Yellow.paint("Getting assets..."));
+            sml::get_assets(instance.get_path().clone(), vanilla_version_path.clone()).unwrap();
 
 
             let classpaths = sml::get_cp_from_version(libpath.clone(), version_paths.clone());

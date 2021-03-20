@@ -19,3 +19,6 @@ walkdir = "2"
 rpassword = "5.0"
 subprocess = "0.2.6"
 ansi_term = "0.12"
+rust-crypto = "^0.2"
+curl = "0.4.35"
+
