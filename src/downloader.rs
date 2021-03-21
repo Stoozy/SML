@@ -1,5 +1,5 @@
 use crypto::{digest::Digest, sha1::Sha1};
-use reqwest::{ClientBuilder, blocking::Client};
+// use reqwest::{ClientBuilder, blocking::Client};
 use indicatif::{ProgressBar, ProgressStyle};
 use std::{fs, time::Duration};
 use std::fs::File;

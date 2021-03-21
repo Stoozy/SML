@@ -97,7 +97,7 @@ fn main() {
 
             let mut launcher_profiles_path = instance.get_path();
             launcher_profiles_path.push("launcher_profiles.json");
-            fs::write(launcher_profiles_path, "{}").expect("Error writing to launcher profiles") ;
+            fs::write(launcher_profiles_path, "{\"profiles\": {} }").expect("Error writing to launcher profiles") ;
 
             // https://files.minecraftforge.net/maven/net/minecraftforge/forge/1.16.5-36.1.0/forge-1.16.5-36.1.0-installer.jar
 
@@ -118,6 +118,7 @@ fn main() {
 
             pause();
 
+            // run the forge installer
             let cmd = format!("java -jar \"{}\"", forge_path.display());
             Exec::shell(cmd).join().unwrap();
 
@@ -146,11 +147,12 @@ fn main() {
 
 
             version_paths.push(vanilla_version_path.clone());
-            version_paths.push(forge_version_path.clone());
+
 
             println!("{}", Yellow.paint("Getting libraries..."));
             sml::get_libraries(libpath.clone(), version_paths.clone()).unwrap();
 
+            version_paths.push(forge_version_path.clone());
 
             println!("{}", Yellow.paint("Getting mods..."));
             sml::get_mods(mods_path);
@@ -201,6 +203,13 @@ fn main() {
             };
 
 
+            let forge_json_file = OpenOptions::new()
+                                .read(true)
+                                .write(true)
+                                .open(forge_version_path.clone())
+                                .expect("Couldn't open forge version file");
+
+            let forge_json : serde_json::Value = serde_json::from_reader(forge_json_file).expect("Unable to parse forge json file");
 
             let mut vanilla_version_path = instance.get_path().clone();
             vanilla_version_path.push(format!("versions/{}/{}.json", mcv, mcv));
@@ -210,22 +219,25 @@ fn main() {
             asset_index.remove(asset_index.len()-1);
             asset_index.remove(asset_index.len()-1);
 
+            let main_class = forge_json["mainClass"]
+                                    .as_str()
+                                    .expect("Couldn't get main class");
+            let forge_args = sml::get_forge_args(forge_json.clone());
+
+
+            
             // TODO: Properly get args
             let mut invoker = Invoker::new(
                 "java -Dminecraft.launcher.brand=minecraft-launcher -Dminecraft.launcher.version=2.2.2012".to_string(),
                 binpath,
                 classpaths,
-                format!("--launchTarget fmlclient  --fml.forgeVersion {} --fml.mcVersion {} --fml.forgeGroup net.minecraftforge --fml.mcpVersion 20201102.104115 --assetsDir \"{}\" --assetIndex {} --gameDir \"{}\" --version  {} --accessToken {} --versionType release --userType mojang", fv, mcv, assetspath.display(), asset_index, instance.get_path().display(), proj.files[choice].version, access_token),
-                "cpw.mods.modlauncher.Launcher".to_string(),
+                format!("{} --assetsDir \"{}\" --assetIndex {} --gameDir \"{}\" --version  {} --accessToken {} --versionType release --userType mojang",  forge_args.unwrap(), assetspath.display(), asset_index, instance.get_path().display(), proj.files[choice].version, access_token),
+                main_class.to_string()
                 );
-
-
 
 
             invoker.gen_invocation();
             invoker.display_invocation();
-
-
 
         },
         None => {}
