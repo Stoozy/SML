@@ -1,23 +1,27 @@
 extern crate clap;
 extern crate ftp;
 
+
+pub mod downloader;
+pub mod sml;
+pub mod auth;
+pub mod ima;
+pub mod invoker;
+pub mod cf;
+
 use std::fs::{self, OpenOptions};
 use std::path::PathBuf;
-
-mod cf;
-mod downloader;
-mod ima;
-mod sml;
-
 use clap::*;
-use downloader::Downloader;
 use subprocess::Exec;
 
 use std::io::{self, Write, Read};
-use ima::InstanceManager;
-use sml::{Invoker, User};
 
-use ansi_term::Colour::Yellow;
+use crate::downloader::Downloader;
+use crate::ima::InstanceManager;
+use crate::sml::User;
+use crate::invoker::Invoker;
+
+use ansi_term::Colour::*;
 
 fn pause() {
     let mut stdout = io::stdout();
@@ -40,7 +44,9 @@ fn get_instances_path() -> Option<PathBuf> {
     })
 }
 
-fn main() {
+fn main() -> () {
+
+    // test area
     let mut ima = InstanceManager::new(get_instances_path().unwrap());
 
     let mut user_path = std::env::current_exe().unwrap();
@@ -66,9 +72,9 @@ fn main() {
 
     // authentication
     if app.is_present("authenticate"){
-        let user = sml::handle_auth().expect("Failed authentication");
+        let user = auth::handle_auth().expect("Failed authentication");
 
-        println!("Authentication successful!");
+        println!("{}", Green.paint("Authentication successful!"));
         std::io::stdout().flush().unwrap();
 
         let user_data = serde_json::to_string(&user).expect("Couldn't parse username and token");
@@ -167,7 +173,7 @@ fn main() {
 
             let access_token = match !user_path.exists(){
                 true => {
-                    let user =  sml::handle_auth().expect("Couldn't get access token");
+                    let user =  auth::handle_auth().expect("Couldn't get access token");
 
                     let user_data = serde_json::to_string(&user)
                         .expect("Couldn't parse username and token");
@@ -185,7 +191,7 @@ fn main() {
                         Ok(u) => u,
                         Err(_) => {
                             println!("Error occured getting user info");
-                            let u = sml::handle_auth().expect("Failed authentication");
+                            let u = auth::handle_auth().expect("Failed authentication");
                             
                             println!("Authentication successful!");
                             std::io::stdout().flush().unwrap();
