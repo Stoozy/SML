@@ -8,6 +8,7 @@ pub mod auth;
 pub mod ima;
 pub mod invoker;
 pub mod cf;
+pub mod util;
 
 use std::fs::{self, OpenOptions};
 use std::path::PathBuf;
@@ -228,7 +229,7 @@ fn main() -> () {
             let main_class = forge_json["mainClass"]
                                     .as_str()
                                     .expect("Couldn't get main class");
-            let forge_args = sml::get_forge_args(forge_json.clone());
+            let forge_args = util::get_forge_args(forge_json.clone());
 
 
 

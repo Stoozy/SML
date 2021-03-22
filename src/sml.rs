@@ -1,16 +1,14 @@
 use crate::{cf::CFFile, downloader::Downloader};
 use crate::ima::Instance;
 use serde_json::*;
-use std::{fs::{File, OpenOptions}, io::{self, BufReader}};
+use std::{fs::{File, OpenOptions}, io::BufReader};
 use std::{fs, path::PathBuf};
 use zip::ZipArchive;
 use serde::{ Serialize, Deserialize};
 use ansi_term::Color::*;
 
 
-mod util;
-
-const CHUNK_SIZE: usize = 8192;
+use crate::util;
 
 // needed for serde json serialization
 #[derive(Serialize, Deserialize)]
@@ -328,19 +326,6 @@ pub fn get_fv_from_mcv(mcv: String) -> String {
         .expect("Couldn't get forge versions list")
         .to_string()
 
-}
-
-
-pub fn get_forge_args(json: serde_json::Value) -> Option<String>{
-    let mut retstr = String::new();
-    // get args here
-    let args = json["arguments"]["game"].as_array().unwrap();
-    for arg in args{
-        retstr.push(' ');
-        retstr.push_str(arg.as_str().unwrap());
-    } 
-
-    Some(retstr)
 }
 
 

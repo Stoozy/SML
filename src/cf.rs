@@ -1,5 +1,5 @@
 use serde_json::Value;
-mod util;
+use crate::util;
 
 #[derive(Clone)]
 pub struct CFFile {

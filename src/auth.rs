@@ -52,9 +52,8 @@ pub fn authorize(email: &str, password: &str) -> Option<User> {
                     .to_string(),
             })
         },
-        Err(ureq::Error::Status(code, resp)) => {
+        Err(ureq::Error::Status(code, _resp)) => {
 
-            let err_json : serde_json::Value = resp.into_json().unwrap();
             println!("Got status {}", code);
 
             if code == 403 {
