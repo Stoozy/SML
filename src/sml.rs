@@ -11,6 +11,8 @@ use zip::ZipArchive;
 use serde::{ Serialize, Deserialize};
 use ansi_term::Color::*;
 
+mod util;
+
 const CHUNK_SIZE: usize = 8192;
 
 
@@ -169,9 +171,10 @@ pub fn get_modslist(chosen_proj: CFFile, instance: Instance) {
 }
 
 
-pub fn get_cp_from_version(libpath: PathBuf, version_paths : Vec<PathBuf>) -> Vec<PathBuf> {
+pub fn get_cp_from_version(libpath: PathBuf, version_paths : Vec<PathBuf>) -> Vec<(String, PathBuf)> {
     let mut retvec = Vec::new();
 
+    
     for version_fpath in version_paths {
         let file = File::open(version_fpath).unwrap();
         let reader = BufReader::new(file);
@@ -180,28 +183,73 @@ pub fn get_cp_from_version(libpath: PathBuf, version_paths : Vec<PathBuf>) -> Ve
         let u : serde_json::Value = serde_json::from_reader(reader).unwrap();
 
         let libraries = u["libraries"].as_array().unwrap();
+
         for lib in libraries {
+            let artifact : Vec<&str> = lib["name"]
+                            .as_str()
+                            .unwrap()
+                            .split(":")
+                            .collect();
+
+            let name = artifact[artifact.len()-2];
+            let version = artifact[artifact.len()-1];
+            let nv = format!("{}:{}", name, version);
+
+
             let mut path = libpath.clone();
             path.push( match lib["downloads"]["artifact"]["path"].as_str(){
                 Some(val) =>  val,
                 None => {
                     println!("Couldn't get library path, skipping");
-                    break;
+                    ""
                 },
             });
-            
-            retvec.push(path);
+
+            let mut found_index = 0;
+            let mut found_version = "";
+
+
+            // this excludes forge or any other invalid lib for the check
+            if lib["url"].as_str().is_none()  {
+                retvec.push((nv, path));
+            }else{
+
+                // make some checks for duplicate library
+                if retvec.iter().enumerate().any(|(i, v): (usize,&(String, PathBuf))|{
+                    let a = &v.0;
+                    let n : Vec<&str> = a.split(":").collect();
+                    found_index = i;
+                    found_version = n[n.len()-2];
+                    name == n[n.len()-1]
+                }) 
+                {
+
+                    if util::is_greater_version(version, found_version) {
+                        // prev version is old
+                        // remove it and put new one
+                        retvec.remove(found_index);
+                        retvec.push((nv, path));
+                    }
+                    // if prev entry has greater version, 
+                    // then don't push anything
+                
+                }else{
+                    // no duplicates found, may push
+                    retvec.push((nv, path));
+                }
+
+            }
         }
+
     }
 
     retvec
-    
 }
 
 pub fn get_libraries(libpath: PathBuf, manifests: Vec<PathBuf>) -> Result<()> {
     for manifest in manifests{
 
-    let mut file = OpenOptions::new()
+    let file = OpenOptions::new()
         .read(true)
         .write(true)
         .open(manifest.clone())
@@ -254,22 +302,22 @@ pub fn get_libraries(libpath: PathBuf, manifests: Vec<PathBuf>) -> Result<()> {
                 downloader.set_sha1(artifact_sha1.to_string());
                 match downloader.download() {
                     Ok(_) => {
-                        match downloader.verify_sha1(){
-                            Some(mut is_verified) => {
-                                while !is_verified {
-                                    println!("Invalid hash: {}",  Yellow.paint("Retrying download..."));
-                                    println!("URL: {}", download_url);
-                                    downloader.download().unwrap();
-                                    is_verified = downloader.verify_sha1().unwrap();
+                        //match downloader.verify_sha1(){
+                        //    Some(mut is_verified) => {
+                        //        while !is_verified {
+                        //            println!("Invalid hash: {}",  Yellow.paint("Retrying download..."));
+                        //            println!("URL: {}", download_url);
+                        //            downloader.download().unwrap();
+                        //            is_verified = downloader.verify_sha1().unwrap();
 
-                                }
+                        //        }
 
-                                println!("{} sha1:{}", Green.paint("File verified!"),  artifact_sha1);
-                            },
-                            None => {
-                                println!("{}", Red.paint("Failed to verify file"));
-                            }
-                        };
+                        //        println!("{} sha1:{}", Green.paint("File verified!"),  artifact_sha1);
+                        //    },
+                        //    None => {
+                        //        println!("{}", Red.paint("Failed to verify file"));
+                        //    }
+                        //};
                     },
                     Err(_) => {
                         println!("{} {}", Red.paint("Failed to download"), artifact_path);

@@ -148,11 +148,12 @@ fn main() {
 
             version_paths.push(vanilla_version_path.clone());
 
-
             println!("{}", Yellow.paint("Getting libraries..."));
             sml::get_libraries(libpath.clone(), version_paths.clone()).unwrap();
 
             version_paths.push(forge_version_path.clone());
+
+            
 
             println!("{}", Yellow.paint("Getting mods..."));
             sml::get_mods(mods_path);
@@ -161,9 +162,6 @@ fn main() {
 
             println!("{}", Yellow.paint("Getting assets..."));
             sml::get_assets(instance.get_path().clone(), vanilla_version_path.clone()).unwrap();
-
-
-            let classpaths = sml::get_cp_from_version(libpath.clone(), version_paths.clone());
 
             let access_token = match !user_path.exists(){
                 true => {
@@ -225,10 +223,16 @@ fn main() {
             let forge_args = sml::get_forge_args(forge_json.clone());
 
 
+            let classes = sml::get_cp_from_version(libpath.clone(), version_paths);
+
+            let mut classpaths : Vec<PathBuf> = Vec::new();
+            for class in classes {
+                classpaths.push(class.1);
+            }
             
             // TODO: Properly get args
             let mut invoker = Invoker::new(
-                "java -Dminecraft.launcher.brand=minecraft-launcher -Dminecraft.launcher.version=2.2.2012".to_string(),
+                "java ".to_string(),
                 binpath,
                 classpaths,
                 format!("{} --assetsDir \"{}\" --assetIndex {} --gameDir \"{}\" --version  {} --accessToken {} --versionType release --userType mojang",  forge_args.unwrap(), assetspath.display(), asset_index, instance.get_path().display(), proj.files[choice].version, access_token),
