@@ -148,6 +148,8 @@ fn main() {
 
             version_paths.push(vanilla_version_path.clone());
 
+
+
             println!("{}", Yellow.paint("Getting libraries..."));
             sml::get_libraries(libpath.clone(), version_paths.clone()).unwrap();
 
@@ -223,9 +225,10 @@ fn main() {
             let forge_args = sml::get_forge_args(forge_json.clone());
 
 
-            let classes = sml::get_cp_from_version(libpath.clone(), version_paths);
 
+            let classes = sml::get_cp_from_version(libpath.clone(), version_paths.clone());
             let mut classpaths : Vec<PathBuf> = Vec::new();
+
             for class in classes {
                 classpaths.push(class.1);
             }

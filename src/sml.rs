@@ -191,10 +191,10 @@ pub fn get_cp_from_version(libpath: PathBuf, version_paths : Vec<PathBuf>) -> Ve
                             .split(":")
                             .collect();
 
-            let name = artifact[artifact.len()-2];
-            let version = artifact[artifact.len()-1];
-            let nv = format!("{}:{}", name, version);
+            let name = artifact[1];
+            let version = artifact[2];
 
+            let full_name = format!("{}:{}:{}", artifact[0], artifact[1], artifact[2]);
 
             let mut path = libpath.clone();
             path.push( match lib["downloads"]["artifact"]["path"].as_str(){
@@ -205,37 +205,38 @@ pub fn get_cp_from_version(libpath: PathBuf, version_paths : Vec<PathBuf>) -> Ve
                 },
             });
 
-            let mut found_index = 0;
-            let mut found_version = "";
-
-
             // this excludes forge or any other invalid lib for the check
-            if lib["url"].as_str().is_none()  {
-                retvec.push((nv, path));
+            if lib["downloads"]["artifact"]["url"].as_str().is_none()  {
+                retvec.push((full_name, path));
             }else{
 
-                // make some checks for duplicate library
-                if retvec.iter().enumerate().any(|(i, v): (usize,&(String, PathBuf))|{
+
+                let mut found_version = "";
+                let found_index = retvec.iter().position(|v|{
                     let a = &v.0;
                     let n : Vec<&str> = a.split(":").collect();
-                    found_index = i;
-                    found_version = n[n.len()-2];
-                    name == n[n.len()-1]
-                }) 
-                {
+                    found_version = n[2];
+                    name == n[1]
 
-                    if util::is_greater_version(version, found_version) {
+                });
+
+
+
+                // make some checks for duplicate library
+                if !found_index.is_none() {
+
+                    //if util::is_greater_version(version, found_version) {
                         // prev version is old
                         // remove it and put new one
-                        retvec.remove(found_index);
-                        retvec.push((nv, path));
-                    }
+                        retvec.remove(found_index.unwrap());
+                        retvec.push((full_name, path));
+                    //}
                     // if prev entry has greater version, 
                     // then don't push anything
                 
                 }else{
                     // no duplicates found, may push
-                    retvec.push((nv, path));
+                    retvec.push((full_name, path));
                 }
 
             }
