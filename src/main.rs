@@ -10,12 +10,13 @@ pub mod invoker;
 pub mod cf;
 pub mod util;
 
-use std::fs::{self, OpenOptions};
+use std::{fs::{self, OpenOptions}, thread};
 use std::path::PathBuf;
 use clap::*;
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use subprocess::Exec;
 
-use std::io::{self, Write, Read};
+use std::io::{ Write };
 
 use crate::downloader::Downloader;
 use crate::ima::InstanceManager;
@@ -24,31 +25,12 @@ use crate::invoker::Invoker;
 
 use ansi_term::Colour::*;
 
-fn pause() {
-    let mut stdout = io::stdout();
-    stdout.write(b"Press Enter to continue...").unwrap();
-    stdout.flush().unwrap();
-    io::stdin().read(&mut [0]).unwrap();
-}
 
-fn get_instances_path() -> Option<PathBuf> {
-    std::env::current_exe().ok().and_then(|mut pb| {
-        pb.pop();
-        pb.push("instances/");
-        // if path dne then, create one
-        // (this should be first time only)
-        if !pb.exists() {
-            println!("Creating instances dir at {}", pb.display());
-            fs::create_dir(pb.as_path().clone()).expect("Error creating instances folder");
-        }
-        Some(pb)
-    })
-}
 
 fn main() -> () {
 
     // test area
-    let mut ima = InstanceManager::new(get_instances_path().unwrap());
+    let mut ima = InstanceManager::new(util::get_instances_path().unwrap());
 
     let mut user_path = std::env::current_exe().unwrap();
     user_path.pop(); // get rid of executable
@@ -101,6 +83,10 @@ fn main() -> () {
             let fv = sml::get_fv_from_mcv(mcv.clone());
             let mcv_fv = format!("{}-{}", mcv, fv);
 
+            let mpb = MultiProgress::new();
+            let sty = ProgressStyle::default_bar()
+                .template("[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}")
+                .progress_chars("=> ");
 
             let mut launcher_profiles_path = instance.get_path();
             launcher_profiles_path.push("launcher_profiles.json");
@@ -116,14 +102,14 @@ fn main() -> () {
             let mut forge_dloader = Downloader::new();
             forge_dloader.set_url(forge_url);
             forge_dloader.set_path(forge_path.clone());
-            forge_dloader.download().expect("Error downloading forge");
+            forge_dloader.download(false).expect("Error downloading forge");
 
             println!();
             println!("When you are prompted by forge, {}", Yellow.paint("PASTE THE FOLLOWING DIRECTORY"));
             println!("{}", instance.get_path().display());
             println!();
 
-            pause();
+            util::pause();
 
             // run the forge installer
             let cmd = format!("java -jar \"{}\"", forge_path.display());
@@ -135,6 +121,7 @@ fn main() -> () {
 
             let mut mods_path = instance.get_path().clone();
             mods_path.push("mods/");
+
             let mut libpath = instance.get_path().clone();
             libpath.push("libraries/");
 
@@ -155,22 +142,37 @@ fn main() -> () {
 
             version_paths.push(vanilla_version_path.clone());
 
-
+            let mut vp = version_paths.clone();
 
             println!("{}", Yellow.paint("Getting libraries..."));
+
             sml::get_libraries(libpath.clone(), version_paths.clone()).unwrap();
 
-            version_paths.push(forge_version_path.clone());
+            vp.push(forge_version_path.clone());
 
-            
 
             println!("{}", Yellow.paint("Getting mods..."));
-            sml::get_mods(mods_path);
 
+            let pb = mpb.add(ProgressBar::new(util::mods_len(mods_path.clone())));
+            pb.set_style(sty.clone());
+
+            let mp = mods_path.clone();
+            thread::spawn(move ||{
+                sml::get_mods(mp, pb);
+            });
 
 
             println!("{}", Yellow.paint("Getting assets..."));
-            sml::get_assets(instance.get_path().clone(), vanilla_version_path.clone()).unwrap();
+
+            let vvp = vanilla_version_path.clone();
+            let pb = mpb.add(ProgressBar::new(util::assets_len(vvp)));
+            pb.set_style(sty.clone());
+
+            let ip = instance.get_path().clone();
+            thread::spawn(move || {
+                sml::get_assets(ip, vanilla_version_path.clone(), pb).unwrap();
+            });
+            mpb.join_and_clear().unwrap();
 
             let access_token = match !user_path.exists(){
                 true => {
@@ -233,7 +235,7 @@ fn main() -> () {
 
 
 
-            let classes = sml::get_cp_from_version(libpath.clone(), version_paths.clone());
+            let classes = sml::get_cp_from_version(libpath.clone(), vp.clone());
             let mut classpaths : Vec<PathBuf> = Vec::new();
 
             for class in classes {

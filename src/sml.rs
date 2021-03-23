@@ -1,7 +1,8 @@
 use crate::{cf::CFFile, downloader::Downloader};
 use crate::ima::Instance;
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use serde_json::*;
-use std::{fs::{File, OpenOptions}, io::BufReader};
+use std::{fs::{File, OpenOptions}, io::BufReader, ops::Mul};
 use std::{fs, path::PathBuf};
 use zip::ZipArchive;
 use serde::{ Serialize, Deserialize};
@@ -32,7 +33,7 @@ pub fn get_modslist(chosen_proj: CFFile, instance: Instance) {
     let mut downloader = Downloader::new();
     downloader.set_url(download_url);
     downloader.set_path(download_path.clone());
-    downloader.download().expect("Error downloading modslist");
+    downloader.download(true).expect("Error downloading modslist");
 
     let mut mod_dirpath = instance.get_path().clone();
     mod_dirpath.push("mods/");
@@ -130,7 +131,7 @@ pub fn get_cp_from_version(libpath: PathBuf, version_paths : Vec<PathBuf>) -> Ve
 pub fn get_libraries(libpath: PathBuf, manifests: Vec<PathBuf>) -> Result<()> {
     for manifest in manifests{
 
-    let file = OpenOptions::new()
+        let file = OpenOptions::new()
         .read(true)
         .write(true)
         .open(manifest.clone())
@@ -142,12 +143,12 @@ pub fn get_libraries(libpath: PathBuf, manifests: Vec<PathBuf>) -> Result<()> {
         let mut downloader = Downloader::new();
 
 
-        for lib in libraries.iter(){
+        for (i, lib) in libraries.iter().enumerate(){
 
             let artifact_path = match lib["downloads"]["artifact"]["path"].as_str(){
                 Some(val) => val,
                 None => {
-                    println!("Error getting library, skipping ...");
+                    // skipping empty paths
                     break;
                 }
             };
@@ -158,10 +159,7 @@ pub fn get_libraries(libpath: PathBuf, manifests: Vec<PathBuf>) -> Result<()> {
             let download_url = match lib["downloads"]["artifact"]["url"].as_str(){
                 Some(val) => val,
                 None => {
-                    println!("{}:{}  {}", 
-                            Red.paint("Library url is missing"),
-                            path.display(),
-                            Yellow.paint("skipping ..."));
+                    // skipping on empty url
                     break;
                 }
 
@@ -181,24 +179,10 @@ pub fn get_libraries(libpath: PathBuf, manifests: Vec<PathBuf>) -> Result<()> {
                 downloader.set_url(download_url.to_string());
                 downloader.set_path(path);
                 downloader.set_sha1(artifact_sha1.to_string());
-                match downloader.download() {
+                match downloader.download(true) {
                     Ok(_) => {
-                        //match downloader.verify_sha1(){
-                        //    Some(mut is_verified) => {
-                        //        while !is_verified {
-                        //            println!("Invalid hash: {}",  Yellow.paint("Retrying download..."));
-                        //            println!("URL: {}", download_url);
-                        //            downloader.download().unwrap();
-                        //            is_verified = downloader.verify_sha1().unwrap();
+                        // TODO: maybe verify sha1 here? 
 
-                        //        }
-
-                        //        println!("{} sha1:{}", Green.paint("File verified!"),  artifact_sha1);
-                        //    },
-                        //    None => {
-                        //        println!("{}", Red.paint("Failed to verify file"));
-                        //    }
-                        //};
                     },
                     Err(_) => {
                         println!("{} {}", Red.paint("Failed to download"), artifact_path);
@@ -213,7 +197,7 @@ pub fn get_libraries(libpath: PathBuf, manifests: Vec<PathBuf>) -> Result<()> {
     Ok(())
 }
 
-pub fn get_assets(game_path: PathBuf, version_path: PathBuf) -> Result<()> {
+pub fn get_assets(game_path: PathBuf, version_path: PathBuf, pb : ProgressBar) -> Result<()> {
     let version_file = File::open(version_path).unwrap();
     let version : serde_json::Value = serde_json::from_reader(version_file).unwrap();
 
@@ -232,7 +216,8 @@ pub fn get_assets(game_path: PathBuf, version_path: PathBuf) -> Result<()> {
 
     let asset_objects = assets_json["objects"].as_object().unwrap();
 
-    for object in asset_objects{
+
+    for (i, object ) in asset_objects.iter().enumerate(){
         let hash = object.1["hash"].as_str().unwrap();
         let first_two = &hash[0..2];
 
@@ -242,17 +227,22 @@ pub fn get_assets(game_path: PathBuf, version_path: PathBuf) -> Result<()> {
         save_path.push(hash);
 
         let download_url = format!("http://resources.download.minecraft.net/{}/{}", first_two, hash);
-        println!("Got url: {}", download_url);
+
         let mut downloader = Downloader::new();
         downloader.set_path(save_path);
         downloader.set_url(download_url);
-        downloader.download().expect("Couldn't download assets");
+        downloader.download(false).expect("Couldn't download assets");
+
+        pb.set_message(&format!("item #{}", i));
+        pb.inc(1);
     }
+
+    pb.finish_with_message("✔️ Done");
     
     Ok(())
 }
 
-pub fn get_mods(mods_path: PathBuf){
+pub fn get_mods(mods_path: PathBuf, pb : ProgressBar){
     let mut mods_manifest_path = mods_path.clone();
     mods_manifest_path.push("manifest.json");
 
@@ -262,6 +252,7 @@ pub fn get_mods(mods_path: PathBuf){
 
 
     let mods = manifest["files"].as_array().unwrap();
+
     
     for m in mods {
         let proj_id = m["projectID"].as_u64().unwrap();
@@ -280,7 +271,7 @@ pub fn get_mods(mods_path: PathBuf){
             } 
         };
 
-        for modfile in modfiles {
+        for (i, modfile) in modfiles.iter().enumerate() {
             // found right mod file now download it
             if modfile["id"].as_u64().unwrap() == file_id {
 
@@ -300,14 +291,17 @@ pub fn get_mods(mods_path: PathBuf){
                let mut downloader = Downloader::new();
                downloader.set_path(download_path);
                downloader.set_url(download_url);
-               match downloader.download(){
-                   Ok(_) => continue,
+               match downloader.download(false){
+                   Ok(_) => {
+                       pb.set_message(&format!("item #{}", i));
+                       pb.inc(1);
+                   },
                    Err(e) => panic!("{}", e),
 
                }
-             }
+            }
         }
-
+        pb.finish_with_message("✔️ Done");
     }
 }
 

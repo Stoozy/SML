@@ -70,9 +70,11 @@ impl Downloader {
     }
 
 
-    pub fn download(&mut self) -> Result<(), reqwest::Error> {
+    pub fn download(&mut self, show_bar: bool) -> Result<(), reqwest::Error> {
         let fp = self.file_path.clone().unwrap();
-        println!("Downloading {}", fp.display());
+        if show_bar{
+            println!("Downloading {}", fp.display());
+        }
         
         // if parent dir doesn't exist
         // recursively create all of them
@@ -98,27 +100,46 @@ impl Downloader {
                     .unwrap();
 
 
-                let pb = ProgressBar::new(data.len() as u64);
+                if show_bar {
+                    // with progressbar
+                    let pb = ProgressBar::new(data.len() as u64);
 
-                pb.set_style(ProgressStyle::default_bar()
-                    .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})")
-.progress_chars("=> "));
+                    pb.set_style(ProgressStyle::default_bar()
+                        .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})")
+                        .progress_chars("=> "));
+
+                        for i in 0..data.len() / CHUNK_SIZE {
+                            if i != (data.len() / CHUNK_SIZE) - 1 {
+                                file.write_all(&data[i * CHUNK_SIZE..(i + 1) * CHUNK_SIZE])
+                                        .expect("Error writing to file");
+                            } else {
+                                // write the entire last part
+                                file.write_all(&data[i * CHUNK_SIZE..])
+                                        .expect("Error writing to file");
+                            }
+
+                                pb.set_position(i as u64);
+                        }
+
+                        pb.finish_with_message("Finished download");
 
 
-                for i in 0..data.len() / CHUNK_SIZE {
-                    if i != (data.len() / CHUNK_SIZE) - 1 {
-                        file.write_all(&data[i * CHUNK_SIZE..(i + 1) * CHUNK_SIZE])
-                                .expect("Error writing to file");
-                    } else {
-                        // write the entire last part
-                        file.write_all(&data[i * CHUNK_SIZE..])
-                                .expect("Error writing to file");
+                }else{
+                    // no progress bar
+                    for i in 0..data.len() / CHUNK_SIZE {
+                        if i != (data.len() / CHUNK_SIZE) - 1 {
+                            file.write_all(&data[i * CHUNK_SIZE..(i + 1) * CHUNK_SIZE])
+                                    .expect("Error writing to file");
+                        } else {
+                            // write the entire last part
+                            file.write_all(&data[i * CHUNK_SIZE..])
+                                    .expect("Error writing to file");
+                        }
+
                     }
-
-                        pb.set_position(i as u64);
                 }
 
-                pb.finish_with_message("Finished download");
+
             },
             Err(e) => {
                 println!("Download failed");

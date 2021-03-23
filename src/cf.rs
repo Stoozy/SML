@@ -1,5 +1,6 @@
 use serde_json::Value;
 use crate::util;
+use ansi_term::Color::Yellow;
 
 #[derive(Clone)]
 pub struct CFFile {
@@ -56,6 +57,7 @@ impl CFProject {
             .unwrap();
         serde_json::from_str(body.as_str()).unwrap()
     }
+
     pub fn get_choice(&mut self) -> usize {
         let res: Value = self.get_json();
 
@@ -78,14 +80,14 @@ impl CFProject {
             // print options
             println!(
                 "  [{}]: {} - {}@{}",
-                i,
+                Yellow.paint(format!("{}", i)),
                 fileobj["display"].as_str().unwrap(),
                 fileobj["type"].as_str().unwrap(),
                 fileobj["version"].as_str().unwrap()
             );
         }
 
-        println!("Choose file (Enter a number): ");
+        println!("Choose version (Enter a number): ");
 
         let choice: u64 = match util::get_u64() {
             Some(n) => n,
