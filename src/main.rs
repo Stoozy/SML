@@ -16,7 +16,7 @@ use clap::*;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use subprocess::Exec;
 
-use std::io::{ Write };
+use std::io::Write;
 
 use crate::downloader::Downloader;
 use crate::ima::InstanceManager;
@@ -146,6 +146,7 @@ fn main() -> () {
 
             println!("{}", Yellow.paint("Getting libraries..."));
 
+            sml::get_binaries(vanilla_version_path.clone(), instance.get_path().clone());
             sml::get_libraries(libpath.clone(), version_paths.clone()).unwrap();
 
             vp.push(forge_version_path.clone());
@@ -160,6 +161,7 @@ fn main() -> () {
             thread::spawn(move ||{
                 sml::get_mods(mp, pb);
             });
+
 
 
             println!("{}", Yellow.paint("Getting assets..."));

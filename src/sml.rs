@@ -8,7 +8,7 @@ use zip::ZipArchive;
 use serde::{ Serialize, Deserialize};
 use ansi_term::Color::*;
 
-
+use std::io::prelude::*;
 use crate::util;
 
 // needed for serde json serialization
@@ -306,14 +306,90 @@ pub fn get_mods(mods_path: PathBuf, pb : ProgressBar){
 }
 
 
+pub fn get_binaries(version_path : PathBuf, instance_path: PathBuf) -> () {
+    let manifest_file = OpenOptions::new()
+                    .read(true)
+                    .write(true)
+                    .open(version_path)
+                    .expect("Couldn't open version path'");
+
+    let json : serde_json::Value = serde_json::from_reader(manifest_file)
+                                .expect("Could not parse version file");
+
+    let libs = json["libraries"].as_array().unwrap();
+    let os = std::env::consts::OS;
+
+    let mut jarpaths : Vec<PathBuf> = Vec::new();
+
+    // Download jars
+    for lib in libs {
+        if !lib["downloads"]["classifiers"].is_null(){
+            let natives_id : &str = match os {
+                "windows" => "natives-windows",
+                "macos" => "natives-macos",
+                "linux" =>  "natives-linux",
+                _ => "",
+            };
+            
+            if natives_id != "" {
+                let url = match lib["downloads"]["classifiers"][natives_id]["url"]
+                        .as_str() {
+                            Some(s) => s,
+                            None => break,
+                        };
+
+                let path =  match lib["downloads"]["classifiers"][natives_id]["path"]
+                        .as_str(){
+                            Some(s) => s,
+                            None => break,
+                        };
+
+                let mut fullpath = instance_path.clone();
+                fullpath.push("libraries/");
+                fullpath.push(path);
+
+                jarpaths.push(PathBuf::from(path));
+
+                let mut dloader = Downloader::new();
+                dloader.set_url(url.to_string());
+                dloader.set_path(PathBuf::from(fullpath));
+                dloader.download(true).expect("Failed to download Binaries");
+            }else {
+                panic!("Couldn't detect OS");
+            }
+        }
+    }
+
+    // Extract jars
+    for jarpath in jarpaths{
+        let mut fullpath = instance_path.clone();
+        fullpath.push("libraries/");
+        fs::create_dir_all(fullpath.clone()).expect("Couldn't create binary directory");
+        fullpath.push(jarpath);
+
+        let jarfile = OpenOptions::new()
+                        .read(true)
+                        .write(true)
+                        .open(fullpath)
+                        .unwrap();
+
+        let mut za = ZipArchive::new(jarfile).unwrap();
+        let mut binpath = instance_path.clone();
+        binpath.push("bin/");
+        fs::create_dir_all(binpath.clone()).expect("Couldn't create binary directory");
+        za.extract(binpath).expect("Couldn't extract binary.");
+    }
+
+}
 
 pub fn get_fv_from_mcv(mcv: String) -> String {
     let versions_url = "https://files.minecraftforge.net/maven/net/minecraftforge/forge/promotions_slim.json"; 
     let versions_json : serde_json::Value = ureq::get(versions_url)
-                                            .call()
-                                            .unwrap()
-                                            .into_json()
-                                            .unwrap();
+        .call()
+        .unwrap()
+        .into_json()
+        .unwrap();
+
     let key = format!("{}-latest", mcv);
     versions_json["promos"][key]
         .as_str()
