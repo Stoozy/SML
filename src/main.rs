@@ -39,7 +39,7 @@ fn main() -> () {
     // create new app
     let app = App::new("SML")
         .version("1.0")
-        .author("Stoozy")
+        .author("Stoozy <mahinsemail@gmail.com>")
         .about("A Minecraft Modded Launcher Command Line Interface")
         .arg(Arg::with_name("id")
              .short("i")
@@ -64,7 +64,6 @@ fn main() -> () {
         fs::write(user_path.clone(), user_data.as_bytes()).expect("Couldn't save user info");
 
     }
-    
 
     match app.value_of("id") {
         Some(id) => {
@@ -77,13 +76,12 @@ fn main() -> () {
             let instance = ima
                 .create_instance(proj.files[choice].display.clone())
                 .expect("Error creating instance");
-           
 
             let mcv = proj.files[choice].version.clone();
             let fv = sml::get_fv_from_mcv(mcv.clone());
             let mcv_fv = format!("{}-{}", mcv, fv);
 
-            let mpb = MultiProgress::new();
+            //let mpb = MultiProgress::new();
             let sty = ProgressStyle::default_bar()
                 .template("[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}")
                 .progress_chars("=> ");
@@ -113,10 +111,11 @@ fn main() -> () {
 
             // run the forge installer
             let cmd = format!("java -jar \"{}\"", forge_path.display());
-            Exec::shell(cmd).join().unwrap();
+            Exec::shell(cmd)
+                .cwd(instance.get_path())
+                .join()
+                .unwrap();
 
-
-            //sml::get_stage(proj.files[choice].clone(), instance.clone());
             sml::get_modslist(proj.files[choice].clone(), instance.clone());
 
             let mut mods_path = instance.get_path().clone();
@@ -132,10 +131,9 @@ fn main() -> () {
             assetspath.push("assets/");
 
             let mut version_paths = Vec::new();
-            
             let mut forge_version_path = instance.get_path(); 
             forge_version_path.push(format!("versions/{}-forge-{}/{}-forge-{}.json", mcv, fv, mcv, fv));
- 
+
             let mut vanilla_version_path = instance.get_path();
             vanilla_version_path.push(format!("versions/{}/{}.json", mcv, mcv));
 
@@ -154,27 +152,20 @@ fn main() -> () {
 
             println!("{}", Yellow.paint("Getting mods..."));
 
-            let pb = mpb.add(ProgressBar::new(util::mods_len(mods_path.clone())));
-            pb.set_style(sty.clone());
 
             let mp = mods_path.clone();
-            thread::spawn(move ||{
-                sml::get_mods(mp, pb);
-            });
 
-
-
+            sml::get_mods(mp).unwrap();
             println!("{}", Yellow.paint("Getting assets..."));
 
-            let vvp = vanilla_version_path.clone();
-            let pb = mpb.add(ProgressBar::new(util::assets_len(vvp)));
-            pb.set_style(sty.clone());
 
-            let ip = instance.get_path().clone();
-            thread::spawn(move || {
-                sml::get_assets(ip, vanilla_version_path.clone(), pb).unwrap();
-            });
-            mpb.join_and_clear().unwrap();
+            sml::get_assets(instance.get_path(), vanilla_version_path.clone()).unwrap();
+
+
+            let mut overrides_path = mods_path.clone();
+            overrides_path.push("overrides/");
+            sml::copy_overrides(instance.get_path(), overrides_path);
+
 
             let access_token = match !user_path.exists(){
                 true => {
@@ -197,10 +188,10 @@ fn main() -> () {
                         Err(_) => {
                             println!("Error occured getting user info");
                             let u = auth::handle_auth().expect("Failed authentication");
-                            
+
                             println!("Authentication successful!");
                             std::io::stdout().flush().unwrap();
-                        
+
                             let user_data = serde_json::to_string(&u)
                                 .expect("Couldn't parse username and token");
                             fs::write(user_path.clone(), user_data.as_bytes())
@@ -243,7 +234,6 @@ fn main() -> () {
             for class in classes {
                 classpaths.push(class.1);
             }
-            
             // TODO: Properly get args
             let mut invoker = Invoker::new(
                 "java ".to_string(),

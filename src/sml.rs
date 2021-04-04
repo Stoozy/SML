@@ -1,14 +1,12 @@
 use crate::{cf::CFFile, downloader::Downloader};
 use crate::ima::Instance;
-use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use indicatif::ProgressBar;
 use serde_json::*;
-use std::{fs::{File, OpenOptions}, io::BufReader, ops::Mul};
-use std::{fs, path::PathBuf};
+use std::{fs::{File, OpenOptions}, io::BufReader};
+use std::{io, fs, path::Path, path::PathBuf};
 use zip::ZipArchive;
 use serde::{ Serialize, Deserialize};
 use ansi_term::Color::*;
-
-use std::io::prelude::*;
 use crate::util;
 
 // needed for serde json serialization
@@ -57,7 +55,6 @@ pub fn get_modslist(chosen_proj: CFFile, instance: Instance) {
 pub fn get_cp_from_version(libpath: PathBuf, version_paths : Vec<PathBuf>) -> Vec<(String, PathBuf)> {
     let mut retvec = Vec::new();
 
-    
     for version_fpath in version_paths {
         let file = File::open(version_fpath).unwrap();
         let reader = BufReader::new(file);
@@ -114,7 +111,6 @@ pub fn get_cp_from_version(libpath: PathBuf, version_paths : Vec<PathBuf>) -> Ve
                     }
                     // if prev entry has greater version, 
                     // then don't push anything
-                
                 }else{
                     // no duplicates found, may push
                     retvec.push((full_name, path));
@@ -143,7 +139,7 @@ pub fn get_libraries(libpath: PathBuf, manifests: Vec<PathBuf>) -> Result<()> {
         let mut downloader = Downloader::new();
 
 
-        for (i, lib) in libraries.iter().enumerate(){
+        for (_i, lib) in libraries.iter().enumerate(){
 
             let artifact_path = match lib["downloads"]["artifact"]["path"].as_str(){
                 Some(val) => val,
@@ -197,7 +193,7 @@ pub fn get_libraries(libpath: PathBuf, manifests: Vec<PathBuf>) -> Result<()> {
     Ok(())
 }
 
-pub fn get_assets(game_path: PathBuf, version_path: PathBuf, pb : ProgressBar) -> Result<()> {
+pub fn get_assets(game_path: PathBuf, version_path: PathBuf) -> Result<()> {
     let version_file = File::open(version_path).unwrap();
     let version : serde_json::Value = serde_json::from_reader(version_file).unwrap();
 
@@ -208,6 +204,18 @@ pub fn get_assets(game_path: PathBuf, version_path: PathBuf, pb : ProgressBar) -
             return Ok(());
         }
     };
+
+    // download assetIndex json file
+    let mut index_save_path = game_path.clone();
+    index_save_path.push("assets/indexes/");
+    index_save_path.push(format!("{}.json", version["assetIndex"]["id"].as_str().unwrap()));
+    
+    let mut dloader = Downloader::new();
+    dloader.set_url(url.to_string());
+    dloader.set_path(index_save_path);
+    dloader.download(false)
+        .expect("Couldn't get assets");
+
     let assets_json : serde_json::Value = ureq::get(url)
                             .call()
                             .unwrap()
@@ -217,7 +225,7 @@ pub fn get_assets(game_path: PathBuf, version_path: PathBuf, pb : ProgressBar) -
     let asset_objects = assets_json["objects"].as_object().unwrap();
 
 
-    for (i, object ) in asset_objects.iter().enumerate(){
+    for (_i, object ) in asset_objects.iter().enumerate(){
         let hash = object.1["hash"].as_str().unwrap();
         let first_two = &hash[0..2];
 
@@ -227,22 +235,19 @@ pub fn get_assets(game_path: PathBuf, version_path: PathBuf, pb : ProgressBar) -
         save_path.push(hash);
 
         let download_url = format!("http://resources.download.minecraft.net/{}/{}", first_two, hash);
-
+        
         let mut downloader = Downloader::new();
         downloader.set_path(save_path);
         downloader.set_url(download_url);
-        downloader.download(false).expect("Couldn't download assets");
+        downloader.set_sha1(hash.to_string());
+        downloader.download_verified();
 
-        pb.set_message(&format!("item #{}", i));
-        pb.inc(1);
     }
-
-    pb.finish_with_message("✔️ Done");
     
     Ok(())
 }
 
-pub fn get_mods(mods_path: PathBuf, pb : ProgressBar){
+pub fn get_mods(mods_path: PathBuf) -> Result<()>{
     let mut mods_manifest_path = mods_path.clone();
     mods_manifest_path.push("manifest.json");
 
@@ -291,18 +296,17 @@ pub fn get_mods(mods_path: PathBuf, pb : ProgressBar){
                let mut downloader = Downloader::new();
                downloader.set_path(download_path);
                downloader.set_url(download_url);
-               match downloader.download(false){
+               match downloader.download(true){
                    Ok(_) => {
-                       pb.set_message(&format!("item #{}", i));
-                       pb.inc(1);
                    },
                    Err(e) => panic!("{}", e),
 
                }
             }
         }
-        pb.finish_with_message("✔️ Done");
     }
+
+    Ok(())
 }
 
 
@@ -382,6 +386,11 @@ pub fn get_binaries(version_path : PathBuf, instance_path: PathBuf) -> () {
 
 }
 
+pub fn copy_overrides(instance_path: PathBuf, overrides_path : PathBuf){
+    copy_dir_all(overrides_path.as_path(), instance_path.as_path())
+        .expect("Could not copy overrides");
+}
+
 pub fn get_fv_from_mcv(mcv: String) -> String {
     let versions_url = "https://files.minecraftforge.net/maven/net/minecraftforge/forge/promotions_slim.json"; 
     let versions_json : serde_json::Value = ureq::get(versions_url)
@@ -399,3 +408,16 @@ pub fn get_fv_from_mcv(mcv: String) -> String {
 }
 
 
+pub fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> {
+    fs::create_dir_all(&dst)?;
+    for entry in fs::read_dir(src)? {
+        let entry = entry?;
+        let ty = entry.file_type()?;
+        if ty.is_dir() {
+            copy_dir_all(entry.path(), dst.as_ref().join(entry.file_name()))?;
+        } else {
+            fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
+        }
+    }
+    Ok(())
+}

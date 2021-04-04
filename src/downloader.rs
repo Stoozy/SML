@@ -4,9 +4,10 @@ use indicatif::{ProgressBar, ProgressStyle};
 use std::{fs, time::Duration};
 use std::fs::File;
 use std::fs::OpenOptions;
-use std::io::{ Read, Write};
+use std::io::{ stdout, Read, Write};
 use std::path::PathBuf;
 use ansi_term::Color::*;
+use curl::easy::Easy;
 
 extern crate crypto;
 
@@ -23,7 +24,7 @@ pub struct Downloader {
 impl Downloader {
     pub fn new () -> Downloader {
         let c = reqwest::blocking::ClientBuilder::new()
-                            .timeout(Duration::from_secs(100))
+                            .timeout(Duration::from_secs(300))
                             .build()
                             .unwrap();
         Downloader {client: c, url: None, file_path: None, sha1: None}
@@ -86,12 +87,32 @@ impl Downloader {
         // create file 
         File::create(self.file_path.clone().unwrap()).expect("Error creating file");
 
+        //let mut easy = Easy::new();
+        //easy.url(self.url.clone().unwrap().as_str()).unwrap();
+        //let fp = self.file_path.clone();
+        //easy.write_function(move |data| {
+        //    let mut file = OpenOptions::new()
+        //            .read(true)
+        //            .write(true)
+        //            .open(fp.clone().unwrap().clone())
+        //            .unwrap();
+
+        //    file.write(data).unwrap();
+        //    Ok(data.len())
+        //}).unwrap();
+        //easy.perform().unwrap();
+
+        //println!("{}", Green.paint("Download finished!"));
+        //println!("{}", easy.response_code().unwrap());
+
         match self.client.get(self.url.clone().unwrap().as_str())
                                     .send()
                                     .unwrap()
                                     .bytes()
         {
             Ok(data)  => {
+                // keep retrying until some data is available
+                if data.len() == 0 { return self.download(show_bar);}
 
                 let mut file = OpenOptions::new()
                     .read(true)
@@ -141,13 +162,37 @@ impl Downloader {
 
 
             },
-            Err(e) => {
-                println!("Download failed");
-                return Err(e);
+            Err(_e) => {
+                println!("Download failed"); 
+                return self.download(show_bar); // keep trying when download fails
             }
             
         }
 
         Ok(())
     }
+
+
+    pub fn download_verified(&mut self)  {
+        self.download(true).expect("Couldn't download assets");
+        
+        match self.verify_sha1(){
+            Some(b) => {
+                if b {
+                    println!("{}", Green.paint("File Verified!"));
+                }else{
+                    println!("{}", Yellow.paint("File not verfied. Re-downloading..."));
+                    self.download_verified();
+                }
+            },
+            None => {
+                    println!("{}", Yellow.paint("File not verfied. Re-downloading..."));
+                    self.download_verified();
+            }
+        }
+
+    }
+
+
+
 }
