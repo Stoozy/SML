@@ -34,13 +34,12 @@ impl Downloader {
         self.url = Some(u);
     }
 
-    pub fn set_path(&mut self, fp: PathBuf)-> () {
+    pub fn set_path(&mut self, fp: PathBuf) -> () {
         self.file_path = Some(fp);
     }
 
-    pub fn set_sha1(&mut self, s : String) -> Downloader{
+    pub fn set_sha1(&mut self, s : String) -> (){
         self.sha1 = Some(s); 
-        self.clone()
     }
 
     // Verify file integrity
@@ -75,6 +74,7 @@ impl Downloader {
         let fp = self.file_path.clone().unwrap();
         if show_bar{
             println!("Downloading {}", fp.display());
+            println!("URL: {}", self.url.clone().unwrap());
         }
         
         // if parent dir doesn't exist
@@ -86,24 +86,6 @@ impl Downloader {
 
         // create file 
         File::create(self.file_path.clone().unwrap()).expect("Error creating file");
-
-        //let mut easy = Easy::new();
-        //easy.url(self.url.clone().unwrap().as_str()).unwrap();
-        //let fp = self.file_path.clone();
-        //easy.write_function(move |data| {
-        //    let mut file = OpenOptions::new()
-        //            .read(true)
-        //            .write(true)
-        //            .open(fp.clone().unwrap().clone())
-        //            .unwrap();
-
-        //    file.write(data).unwrap();
-        //    Ok(data.len())
-        //}).unwrap();
-        //easy.perform().unwrap();
-
-        //println!("{}", Green.paint("Download finished!"));
-        //println!("{}", easy.response_code().unwrap());
 
         match self.client.get(self.url.clone().unwrap().as_str())
                                     .send()
@@ -119,52 +101,50 @@ impl Downloader {
                     .write(true)
                     .open(fp.clone())
                     .unwrap();
+                file.write_all(&data);
+
+                //if show_bar {
+                //    // with progressbar
+                //    let pb = ProgressBar::new(data.len() as u64);
+
+                //    pb.set_style(ProgressStyle::default_bar()
+                //        .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})")
+                //        .progress_chars("=> "));
+
+                //        for i in 0..data.len() / CHUNK_SIZE {
+                //            if i != (data.len() / CHUNK_SIZE) - 1 {
+                //                file.write_all(&data[i * CHUNK_SIZE..(i + 1) * CHUNK_SIZE])
+                //                        .expect("Error writing to file");
+                //            }
+                //            pb.set_position(i as u64);
+                //        }
+
+                //        file.write_all(&data[(data.len()%CHUNK_SIZE)..])
+                //                        .expect("Error writing to file");
+
+                //        pb.set_position(data.len() as u64);
+                //        pb.finish_with_message("Finished download");
 
 
-                if show_bar {
-                    // with progressbar
-                    let pb = ProgressBar::new(data.len() as u64);
+                //}else{
+                //    // no progress bar
+                //    for i in 0..data.len() / CHUNK_SIZE {
+                //        if i != (data.len() / CHUNK_SIZE) - 1 {
+                //            file.write_all(&data[i * CHUNK_SIZE..(i + 1) * CHUNK_SIZE])
+                //                    .expect("Error writing to file");
+                //        } else {
+                //            // write the entire last part
+                //            file.write_all(&data[i * CHUNK_SIZE..])
+                //                    .expect("Error writing to file");
+                //        }
 
-                    pb.set_style(ProgressStyle::default_bar()
-                        .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})")
-                        .progress_chars("=> "));
-
-                        for i in 0..data.len() / CHUNK_SIZE {
-                            if i != (data.len() / CHUNK_SIZE) - 1 {
-                                file.write_all(&data[i * CHUNK_SIZE..(i + 1) * CHUNK_SIZE])
-                                        .expect("Error writing to file");
-                            } else {
-                                // write the entire last part
-                                file.write_all(&data[i * CHUNK_SIZE..])
-                                        .expect("Error writing to file");
-                            }
-
-                                pb.set_position(i as u64);
-                        }
-
-                        pb.finish_with_message("Finished download");
-
-
-                }else{
-                    // no progress bar
-                    for i in 0..data.len() / CHUNK_SIZE {
-                        if i != (data.len() / CHUNK_SIZE) - 1 {
-                            file.write_all(&data[i * CHUNK_SIZE..(i + 1) * CHUNK_SIZE])
-                                    .expect("Error writing to file");
-                        } else {
-                            // write the entire last part
-                            file.write_all(&data[i * CHUNK_SIZE..])
-                                    .expect("Error writing to file");
-                        }
-
-                    }
-                }
+                //    }
+                //}
 
 
             },
-            Err(_e) => {
-                println!("Download failed"); 
-                return self.download(show_bar); // keep trying when download fails
+            Err(e) => {
+                panic!("Download failed! : {}", e);
             }
             
         }

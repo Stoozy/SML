@@ -34,6 +34,7 @@ pub fn get_modslist(chosen_proj: CFFile, instance: Instance) {
     downloader.download(true).expect("Error downloading modslist");
 
     let mut mod_dirpath = instance.get_path().clone();
+
     mod_dirpath.push("mods/");
 
     // extract zip
@@ -254,7 +255,6 @@ pub fn get_mods(mods_path: PathBuf) -> Result<()>{
     let manifest_reader = File::open(mods_manifest_path).unwrap();
     let manifest : serde_json::Value = serde_json::from_reader(manifest_reader)
                                         .expect("Couldn't get mod manifest");
-
 
     let mods = manifest["files"].as_array().unwrap();
 

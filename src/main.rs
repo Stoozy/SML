@@ -10,10 +10,10 @@ pub mod invoker;
 pub mod cf;
 pub mod util;
 
-use std::{fs::{self, OpenOptions}, thread};
+use std::{fs::{self, OpenOptions}};
 use std::path::PathBuf;
 use clap::*;
-use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use indicatif::{ProgressStyle};
 use subprocess::Exec;
 
 use std::io::Write;
@@ -29,7 +29,6 @@ use ansi_term::Colour::*;
 
 fn main() -> () {
 
-    // test area
     let mut ima = InstanceManager::new(util::get_instances_path().unwrap());
 
     let mut user_path = std::env::current_exe().unwrap();
