@@ -15,13 +15,11 @@ pub fn handle_auth() -> Option<User> {
     let password: String = rpassword::prompt_password_stdout("Password: ").unwrap();
 
     let user = authorize(email.as_str(), password.as_str());
-
     if user.is_none() {
         handle_auth()
-    }else {
+    } else {
         Some(user.unwrap())
     }
-
 }
 
 pub fn authorize(email: &str, password: &str) -> Option<User> {
@@ -51,9 +49,8 @@ pub fn authorize(email: &str, password: &str) -> Option<User> {
                     .expect("Error parsing json")
                     .to_string(),
             })
-        },
+        }
         Err(ureq::Error::Status(code, _resp)) => {
-
             println!("Got status {}", code);
 
             if code == 403 {

@@ -1,5 +1,5 @@
+use std::io::Write;
 use std::path::PathBuf;
-
 
 pub struct Invoker {
     java: String,
@@ -43,12 +43,26 @@ impl Invoker {
         println!("{}", self.ccmd.clone().unwrap());
     }
 
+    pub fn save_invocation_to_file(&self, path: PathBuf) {
+        let cmd = self.ccmd.clone().unwrap();
+
+        if !path.exists() {
+            std::fs::create_dir_all(path.clone()).unwrap();
+        }
+
+        let mut file = std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(path)
+            .unwrap();
+
+        file.write_all(cmd.as_bytes()).unwrap();
+    }
+
     pub fn invoke(&self) -> () {
         // make sure command is not empty
         if !self.ccmd.is_none() {
             // open subprocess with command here ...
         }
-
     }
 }
-

@@ -1,6 +1,6 @@
-use serde_json::Value;
 use crate::util;
 use ansi_term::Color::Yellow;
+use serde_json::Value;
 
 #[derive(Clone)]
 pub struct CFFile {

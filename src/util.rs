@@ -1,23 +1,21 @@
-use std::{fs::{self, File}, io::{self, Write, Read}};
 use std::path::PathBuf;
+use std::{
+    fs::{self, File},
+    io::{self, Read, Write},
+};
 
-
-pub fn assets_len(version_path : PathBuf) -> u64 {
+pub fn assets_len(version_path: PathBuf) -> u64 {
     let version_file = File::open(version_path).unwrap();
-    let version : serde_json::Value = serde_json::from_reader(version_file).unwrap();
+    let version: serde_json::Value = serde_json::from_reader(version_file).unwrap();
 
-    let url = match version["assetIndex"]["url"].as_str(){
+    let url = match version["assetIndex"]["url"].as_str() {
         Some(val) => val,
         None => {
             return 0;
         }
     };
 
-    let assets_json : serde_json::Value = ureq::get(url)
-                            .call()
-                            .unwrap()
-                            .into_json()
-                            .unwrap();
+    let assets_json: serde_json::Value = ureq::get(url).call().unwrap().into_json().unwrap();
 
     let asset_objects = assets_json["objects"].as_object().unwrap();
 
@@ -29,14 +27,12 @@ pub fn mods_len(mods_path: PathBuf) -> u64 {
     mods_manifest_path.push("manifest.json");
 
     let manifest_reader = File::open(mods_manifest_path).unwrap();
-    let manifest : serde_json::Value = serde_json::from_reader(manifest_reader)
-                                        .expect("Couldn't get mod manifest");
+    let manifest: serde_json::Value =
+        serde_json::from_reader(manifest_reader).expect("Couldn't get mod manifest");
 
     let mods = manifest["files"].as_array().unwrap();
     mods.len() as u64
 }
-
-
 
 pub fn pause() {
     let mut stdout = io::stdout();
@@ -74,27 +70,30 @@ pub fn get_u64() -> Option<u64> {
 
 pub fn is_greater_version(version1: &str, version2: &str) -> bool {
     // serialize version as int and check if greater
-    let v1_c : Vec<&str> = version1.split(".").collect();
-    let v2_c : Vec<&str> = version2.split(".").collect();
+    let v1_c: Vec<&str> = version1.split(".").collect();
+    let v2_c: Vec<&str> = version2.split(".").collect();
 
     let mut v1 = 0;
     let mut v2 = 0;
-    
-    for i in v1_c { v1 = v1*10 + i.parse::<i32>().unwrap(); }
-    for i in v2_c { v2 = v2*10 + i.parse::<i32>().unwrap(); }
+
+    for i in v1_c {
+        v1 = v1 * 10 + i.parse::<i32>().unwrap();
+    }
+    for i in v2_c {
+        v2 = v2 * 10 + i.parse::<i32>().unwrap();
+    }
 
     v1 > v2
 }
 
-pub fn get_forge_args(json: serde_json::Value) -> Option<String>{
+pub fn get_forge_args(json: serde_json::Value) -> Option<String> {
     let mut retstr = String::new();
     // get args here
     let args = json["arguments"]["game"].as_array().unwrap();
-    for arg in args{
+    for arg in args.iter() {
         retstr.push(' ');
         retstr.push_str(arg.as_str().unwrap());
-    } 
+    }
 
     Some(retstr)
 }
-
