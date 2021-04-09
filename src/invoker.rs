@@ -1,8 +1,10 @@
+use serde_json::json;
 use std::io::Write;
 use std::path::PathBuf;
 
 pub struct Invoker {
     java: String,
+    custom_args: Option<String>,
     binpath: PathBuf,
     classpaths: Vec<PathBuf>,
     args: String,
@@ -14,6 +16,7 @@ impl Invoker {
     pub fn new(jp: String, bp: PathBuf, cp: Vec<PathBuf>, a: String, mc: String) -> Invoker {
         Invoker {
             java: jp,
+            custom_args: None,
             binpath: bp,
             classpaths: cp,
             args: a,
@@ -25,6 +28,13 @@ impl Invoker {
     pub fn gen_invocation(&mut self) {
         let mut cmd: String = self.java.clone();
         cmd.push_str(format!(" -Djava.library.path=\"{}\" ", self.binpath.display()).as_str());
+
+        match &self.custom_args {
+            Some(args) => {
+                cmd.push_str(format!(" {}", args).as_str());
+            }
+            None => (),
+        }
 
         // classpaths
         cmd.push_str(" -cp ");
@@ -39,32 +49,45 @@ impl Invoker {
         self.ccmd = Some(cmd);
     }
 
-    pub fn display_invocation(&self) -> () {
+    pub fn display_invocation(&self) {
         println!("{}", self.ccmd.clone().unwrap());
     }
 
-    pub fn save_invocation_to_file(&self, path: PathBuf) {
+    pub fn export_as_json(&mut self, path: PathBuf) {
         let cmd = self.ccmd.clone().unwrap();
+        let mut file = std::fs::File::create(path).expect("Error writing command to file...");
+        let binpath_arg = format!(" -Djava.library.path=\"{}\" ", self.binpath.display());
 
-        let mut pathdir = path.clone();
-        pathdir.pop();
-
-        if !path.exists() {
-            std::fs::create_dir_all(pathdir).unwrap();
+        // classpaths string
+        let mut cp_arg = "".to_string();
+        cp_arg.push_str(" -cp ");
+        for cp in self.classpaths.clone() {
+            let cp_str = format!("\"{}\":", cp.display());
+            cp_arg.push_str(cp_str.as_str());
         }
 
-        let mut file = std::fs::OpenOptions::new()
-            .read(true)
-            .write(true)
-            .open(path)
-            .unwrap();
+        let custom_args = match &self.custom_args {
+            Some(args) => args.as_str(),
+            None => "",
+        };
 
-        file.write_all(cmd.as_bytes()).unwrap();
+        let serialized_invoker_data = json!({
+            "java":"java",
+            "binpath" : binpath_arg,
+            "custom_args": custom_args,
+            "classpaths" : cp_arg,
+            "mainclass" : self.main,
+            "game_args" : self.args
+        });
+
+        let data = serde_json::to_string(&serialized_invoker_data)
+            .expect("Couldn't convert json to string");
+        file.write_all(data.as_bytes()).unwrap();
     }
 
-    pub fn invoke(&self) -> () {
+    pub fn invoke(&self) {
         // make sure command is not empty
-        if !self.ccmd.is_none() {
+        if self.ccmd.is_some() {
             // open subprocess with command here ...
         }
     }

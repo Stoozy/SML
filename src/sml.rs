@@ -14,7 +14,6 @@ use zip::ZipArchive;
 
 // needed for serde json serialization
 #[derive(Serialize, Deserialize)]
-
 pub struct User {
     pub name: String,
     pub token: String,

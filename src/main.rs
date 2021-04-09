@@ -66,6 +66,12 @@ fn main() -> () {
 
     match app.value_of("id") {
         Some(id) => {
+            // if there is no userinfo, stop the setup process
+            if !user_path.exists() {
+                println!("Please authenticate first!");
+                return;
+            }
+
             let mut proj = cf::CFProject::new(
                 id.parse::<u64>().expect("Not a valid id"),
                 "https://api.cfwidget.com/".to_string(),
@@ -79,10 +85,6 @@ fn main() -> () {
             let mcv = proj.files[choice].version.clone();
             let fv = sml::get_fv_from_mcv(mcv.clone());
             let mcv_fv = format!("{}-{}", mcv, fv);
-            //let mpb = MultiProgress::new();
-            //let sty = ProgressStyle::default_bar()
-            //    .template("[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}")
-            //    .progress_chars("=> ");
 
             let mut launcher_profiles_path = instance.get_path();
             launcher_profiles_path.push("launcher_profiles.json");
@@ -93,7 +95,6 @@ fn main() -> () {
             // https://files.minecraftforge.net/maven/net/minecraftforge/forge/1.16.5-36.1.0/forge-1.16.5-36.1.0-installer.jar
 
             let forge_url = format!("https://files.minecraftforge.net/maven/net/minecraftforge/forge/{}/forge-{}-installer.jar", mcv_fv, mcv_fv );
-
             let mut forge_path = instance.get_path().clone();
             forge_path.push(format!("forge-{}-installer.jar", mcv_fv));
 
@@ -166,40 +167,13 @@ fn main() -> () {
             overrides_path.push("overrides/");
             sml::copy_overrides(instance.get_path(), overrides_path);
 
-            let access_token = match !user_path.exists() {
-                true => {
-                    let user = auth::handle_auth().expect("Couldn't get access token");
+            let user = auth::handle_auth().expect("Couldn't get access token");
+            let user_data =
+                serde_json::to_string(&user).expect("Couldn't parse username and token");
+            fs::write(user_path, user_data.as_bytes()).expect("Couldn't save user info");
 
-                    let user_data =
-                        serde_json::to_string(&user).expect("Couldn't parse username and token");
-                    fs::write(user_path, user_data.as_bytes()).expect("Couldn't save user info");
-                    user.token
-                }
-                false => {
-                    let user_file = OpenOptions::new()
-                        .read(true)
-                        .write(true)
-                        .open(user_path.clone())
-                        .unwrap();
-                    let user: User = match serde_json::from_reader(user_file) {
-                        Ok(u) => u,
-                        Err(_) => {
-                            println!("Error occured getting user info");
-                            let u = auth::handle_auth().expect("Failed authentication");
-
-                            println!("Authentication successful!");
-                            std::io::stdout().flush().unwrap();
-
-                            let user_data = serde_json::to_string(&u)
-                                .expect("Couldn't parse username and token");
-                            fs::write(user_path.clone(), user_data.as_bytes())
-                                .expect("Couldn't save user info");
-                            u
-                        }
-                    };
-                    user.token
-                }
-            };
+            let user_name = user.name;
+            let access_token = user.token;
 
             let forge_json_file = OpenOptions::new()
                 .read(true)
@@ -229,21 +203,21 @@ fn main() -> () {
             for class in classes {
                 classpaths.push(class.1);
             }
-            // TODO: Properly get args
+
             let mut invoker = Invoker::new(
                 "java ".to_string(),
                 binpath,
                 classpaths,
-                format!("{} --assetsDir \"{}\" --assetIndex {} --gameDir \"{}\" --version  {} --accessToken {} --versionType release --userType mojang",  forge_args.unwrap(), assetspath.display(), asset_index, instance.get_path().display(), proj.files[choice].version, access_token),
+                format!("{} --assetsDir \"{}\" --assetIndex {} --gameDir \"{}\" --version  {} --username {} --accessToken {} --versionType release --userType mojang",  forge_args.unwrap(), assetspath.display(), asset_index, instance.get_path().display(), proj.files[choice].version, user_name, access_token),
                 main_class.to_string()
                 );
 
             let mut cmd_fp = instance.get_path();
-            cmd_fp.push("cmd.sh");
+            cmd_fp.push("sml_invoker.json");
 
             invoker.gen_invocation();
-            invoker.display_invocation();
-            invoker.save_invocation_to_file(cmd_fp);
+            invoker.export_as_json(cmd_fp);
+            println!("{}", Green.paint("Setup is complete!"));
         }
         None => {}
     };

@@ -12,6 +12,19 @@ impl Instance {
         Instance { name: n, path: p }
     }
 
+    pub fn parse_config_file(&self) -> String {
+        let retstr: String = "".to_string();
+
+        retstr
+    }
+
+    pub fn create_config_file(&self) {
+        let mut conf_fpath = self.path.clone();
+        conf_fpath.push("sml_config.json");
+        let mut conf_file =
+            fs::File::create(conf_fpath).expect("Wasn't able to create SML config file");
+    }
+
     pub fn get_path(&self) -> PathBuf {
         self.path.clone()
     }
