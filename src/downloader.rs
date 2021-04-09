@@ -2,7 +2,7 @@ use ansi_term::Color::*;
 use crypto::{digest::Digest, sha1::Sha1};
 use std::fs::File;
 use std::fs::OpenOptions;
-use std::io::{ Read, Write};
+use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::{fs, time::Duration};
 
@@ -30,15 +30,15 @@ impl Downloader {
         }
     }
 
-    pub fn set_url(&mut self, u: String) -> () {
+    pub fn set_url(&mut self, u: String) {
         self.url = Some(u);
     }
 
-    pub fn set_path(&mut self, fp: PathBuf) -> () {
+    pub fn set_path(&mut self, fp: PathBuf) {
         self.file_path = Some(fp);
     }
 
-    pub fn set_sha1(&mut self, s: String) -> () {
+    pub fn set_sha1(&mut self, s: String) {
         self.sha1 = Some(s);
     }
 

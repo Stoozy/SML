@@ -14,6 +14,7 @@ use zip::ZipArchive;
 
 // needed for serde json serialization
 #[derive(Serialize, Deserialize)]
+
 pub struct User {
     pub name: String,
     pub token: String,
@@ -244,7 +245,7 @@ pub fn get_assets(game_path: PathBuf, version_path: PathBuf) -> Result<()> {
     Ok(())
 }
 
-pub fn get_mods(mods_path: PathBuf) -> Result<()> {
+pub fn get_mods(mc_version: String, mods_path: PathBuf) -> Result<()> {
     let mut mods_manifest_path = mods_path.clone();
     mods_manifest_path.push("manifest.json");
 
@@ -264,6 +265,43 @@ pub fn get_mods(mods_path: PathBuf) -> Result<()> {
                 .unwrap()
                 .into_json()
                 .unwrap();
+
+        let for_versions = mod_json["versions"].as_array();
+
+        if for_versions.is_some() {
+            for version in for_versions.unwrap() {
+                let v = version.as_str().unwrap();
+                if v == mc_version {
+                    // search the fileID here
+                    let files = version.as_array().unwrap();
+                    for file in files {
+                        let cfid = file["id"].as_u64().unwrap();
+                        if cfid == file_id {
+                            let cf_file = CFFile {
+                                id: file_id,
+                                display: version["display"].as_str().unwrap().to_string(),
+                                name: version["name"].as_str().unwrap().to_string(),
+                                ftype: version["type"].as_str().unwrap().to_string(),
+                                version: version["version"].as_str().unwrap().to_string(),
+                            };
+
+                            let download_url = cf_file.get_download_url();
+                            let mut download_path = mods_path.clone();
+                            download_path.push(cf_file.name);
+
+                            let mut downloader = Downloader::new();
+                            downloader.set_path(download_path);
+                            downloader.set_url(download_url);
+                            match downloader.download(true) {
+                                Ok(_) => return Ok(()),
+                                Err(e) => panic!("{}", e),
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         let modfiles = match mod_json["files"].as_array() {
             Some(val) => val,
             None => {
@@ -272,7 +310,7 @@ pub fn get_mods(mods_path: PathBuf) -> Result<()> {
             }
         };
 
-        for (i, modfile) in modfiles.iter().enumerate() {
+        for (_i, modfile) in modfiles.iter().enumerate() {
             // found right mod file now download it
             if modfile["id"].as_u64().unwrap() == file_id {
                 let cf_file = CFFile {
@@ -287,8 +325,6 @@ pub fn get_mods(mods_path: PathBuf) -> Result<()> {
                 let mut download_path = mods_path.clone();
                 download_path.push(cf_file.name);
 
-                // if one mod errors, then continue with the rest
-                // TODO: Track and display broken files
                 let mut downloader = Downloader::new();
                 downloader.set_path(download_path);
                 downloader.set_url(download_url);

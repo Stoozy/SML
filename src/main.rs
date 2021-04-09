@@ -79,17 +79,17 @@ fn main() -> () {
             let mcv = proj.files[choice].version.clone();
             let fv = sml::get_fv_from_mcv(mcv.clone());
             let mcv_fv = format!("{}-{}", mcv, fv);
-
             //let mpb = MultiProgress::new();
-            let sty = ProgressStyle::default_bar()
-                .template("[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}")
-                .progress_chars("=> ");
+            //let sty = ProgressStyle::default_bar()
+            //    .template("[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}")
+            //    .progress_chars("=> ");
 
             let mut launcher_profiles_path = instance.get_path();
             launcher_profiles_path.push("launcher_profiles.json");
             fs::write(launcher_profiles_path, "{\"profiles\": {} }")
                 .expect("Error writing to launcher profiles");
 
+            // example url
             // https://files.minecraftforge.net/maven/net/minecraftforge/forge/1.16.5-36.1.0/forge-1.16.5-36.1.0-installer.jar
 
             let forge_url = format!("https://files.minecraftforge.net/maven/net/minecraftforge/forge/{}/forge-{}-installer.jar", mcv_fv, mcv_fv );
@@ -140,7 +140,7 @@ fn main() -> () {
             ));
 
             let mut vanilla_version_path = instance.get_path();
-            vanilla_version_path.push(format!("versions/{}/{}.json", mcv, mcv));
+            vanilla_version_path.push(format!("versions/{}/{}.json", mcv.clone(), mcv.clone()));
 
             version_paths.push(vanilla_version_path.clone());
 
@@ -157,7 +157,7 @@ fn main() -> () {
 
             let mp = mods_path.clone();
 
-            sml::get_mods(mp).unwrap();
+            sml::get_mods(mcv.clone(), mp).unwrap();
             println!("{}", Yellow.paint("Getting assets..."));
 
             sml::get_assets(instance.get_path(), vanilla_version_path.clone()).unwrap();
@@ -211,7 +211,7 @@ fn main() -> () {
                 serde_json::from_reader(forge_json_file).expect("Unable to parse forge json file");
 
             let mut vanilla_version_path = instance.get_path().clone();
-            vanilla_version_path.push(format!("versions/{}/{}.json", mcv, mcv));
+            vanilla_version_path.push(format!("versions/{}/{}.json", mcv.clone(), mcv.clone()));
 
             let mut asset_index = proj.files[choice].version.clone();
             // remove the last . and number

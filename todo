@@ -1,6 +1,0 @@
-#+title: SML Dev
-#+author: Stoozy
-
-* TODO change system for downloading libraries
-** They are indexed via version, so it's possible to simplify the search
-** The original system would use more time because of more items to search based on id

@@ -46,8 +46,11 @@ impl Invoker {
     pub fn save_invocation_to_file(&self, path: PathBuf) {
         let cmd = self.ccmd.clone().unwrap();
 
+        let mut pathdir = path.clone();
+        pathdir.pop();
+
         if !path.exists() {
-            std::fs::create_dir_all(path.clone()).unwrap();
+            std::fs::create_dir_all(pathdir).unwrap();
         }
 
         let mut file = std::fs::OpenOptions::new()

@@ -14,7 +14,7 @@ pub fn handle_auth() -> Option<User> {
 
     let password: String = rpassword::prompt_password_stdout("Password: ").unwrap();
 
-    let user = authorize(email.as_str(), password.as_str());
+    let user = authenticate(email.as_str(), password.as_str());
     if user.is_none() {
         handle_auth()
     } else {
@@ -22,7 +22,7 @@ pub fn handle_auth() -> Option<User> {
     }
 }
 
-pub fn authorize(email: &str, password: &str) -> Option<User> {
+pub fn authenticate(email: &str, password: &str) -> Option<User> {
     let payload = serde_json::json!(
     {
         "agent" : {
