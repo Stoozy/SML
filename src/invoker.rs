@@ -27,7 +27,7 @@ impl Invoker {
 
     pub fn gen_invocation(&mut self) {
         let mut cmd: String = self.java.clone();
-        cmd.push_str(format!(" -Djava.library.path=\"{}\" ", self.binpath.display()).as_str());
+        cmd.push_str(format!(" -Djava.library.path=\"{}\"", self.binpath.display()).as_str());
 
         match &self.custom_args {
             Some(args) => {
@@ -55,7 +55,7 @@ impl Invoker {
 
     pub fn export_as_json(&mut self, path: PathBuf) {
         let mut file = std::fs::File::create(path).expect("Error writing command to file...");
-        let binpath_arg = format!(" -Djava.library.path=\"{}\" ", self.binpath.display());
+        let binpath_arg = format!("{} ", self.binpath.display());
 
         let custom_args = match &self.custom_args {
             Some(args) => args.as_str(),
@@ -76,16 +76,19 @@ impl Invoker {
         file.write_all(data.as_bytes()).unwrap();
     }
 
-    pub fn invoke(&self) {
-        // make sure command is not empty
-        if self.ccmd.is_some() {
-            // open subprocess with command here ...
-        }
+    pub fn get_cmd(&mut self) -> String {
+        match self.ccmd.clone() {
+            Some(v) => return v,
+            None => {
+                self.gen_invocation();
+                return self.get_cmd();
+            }
+        };
     }
 }
 
-impl From<PathBuf> for Invoker {
-    fn from(fp: PathBuf) -> Self {
+impl From<&PathBuf> for Invoker {
+    fn from(fp: &PathBuf) -> Self {
         let file = std::fs::OpenOptions::new()
             .read(true)
             .write(true)

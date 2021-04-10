@@ -65,6 +65,22 @@ impl InstanceManager {
 
         Some(Instance::new(name, ipath))
     }
+    pub fn get_list(&mut self) -> Vec<PathBuf> {
+        let mut invoker_files: Vec<PathBuf> = Vec::new();
+
+        let instances_dir = self.path.clone();
+        for entry in fs::read_dir(instances_dir).unwrap() {
+            let entry_path = entry.unwrap().path();
+            let mut invoker_file = entry_path.clone();
+            invoker_file.push("sml_invoker.json");
+
+            if invoker_file.exists() {
+                invoker_files.push(invoker_file);
+            }
+        }
+
+        invoker_files
+    }
 
     pub fn display_list(&mut self) {
         let instances_dir = self.path.clone();

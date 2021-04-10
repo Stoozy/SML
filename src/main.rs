@@ -43,10 +43,18 @@ fn main() -> () {
                 .takes_value(false),
         )
         .arg(
+            Arg::with_name("launch")
+                .long("launch")
+                .help("Launches instance with specific ID")
+                .value_name("ID")
+                .takes_value(true),
+        )
+        .arg(
             Arg::with_name("id")
                 .short("i")
                 .long("id")
-                .help("Searches for project in curseforge with given id")
+                .value_name("ID")
+                .help("Searches for project in curseforge with given ID")
                 .takes_value(true),
         )
         .arg(
@@ -57,6 +65,26 @@ fn main() -> () {
                 .takes_value(false),
         )
         .get_matches();
+
+    match app.value_of("launch") {
+        Some(id) => {
+            let id_num = id.parse::<u64>().expect("Not a valid id");
+            let list_vec = ima.get_list();
+
+            let invoker_path = &list_vec[id_num as usize];
+            let mut invoker = Invoker::from(invoker_path);
+            invoker.gen_invocation();
+
+            let mut cwd = invoker_path.clone();
+            cwd.pop(); // gets rid of the sml_invoker.json part of the  pathbuf
+
+            let cmd = invoker.get_cmd();
+            println!("{}", cmd);
+            let process = Exec::shell(cmd).cwd(cwd);
+            process.join().unwrap();
+        }
+        None => (),
+    }
 
     if app.is_present("list") {
         ima.display_list();
