@@ -1,3 +1,4 @@
+use ansi_term::Color::*;
 use std::fs;
 use std::path::PathBuf;
 
@@ -21,8 +22,7 @@ impl Instance {
     pub fn create_config_file(&self) {
         let mut conf_fpath = self.path.clone();
         conf_fpath.push("sml_config.json");
-        let mut conf_file =
-            fs::File::create(conf_fpath).expect("Wasn't able to create SML config file");
+        fs::File::create(conf_fpath).expect("Wasn't able to create SML config file");
     }
 
     pub fn get_path(&self) -> PathBuf {
@@ -64,6 +64,27 @@ impl InstanceManager {
         }
 
         Some(Instance::new(name, ipath))
+    }
+
+    pub fn display_list(&mut self) {
+        let instances_dir = self.path.clone();
+        let mut counter: u64 = 0;
+        for entry in fs::read_dir(instances_dir).unwrap() {
+            let entry_path = entry.unwrap().path();
+            let mut invoker_file = entry_path.clone();
+            invoker_file.push("sml_invoker.json");
+
+            let instance_name = entry_path.file_name().unwrap();
+
+            if invoker_file.exists() {
+                println!(
+                    "[{}] {}",
+                    Yellow.paint(format!("{}", counter)),
+                    instance_name.to_str().unwrap()
+                );
+                counter += 1;
+            }
+        }
     }
 
     pub fn add_instance(&mut self, i: Instance) {

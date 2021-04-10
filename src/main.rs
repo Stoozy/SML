@@ -11,7 +11,6 @@ pub mod invoker;
 pub mod util;
 
 use clap::*;
-use indicatif::ProgressStyle;
 use std::fs::{self, OpenOptions};
 use std::path::PathBuf;
 use subprocess::Exec;
@@ -38,6 +37,12 @@ fn main() -> () {
         .author("Stoozy <mahinsemail@gmail.com>")
         .about("A Minecraft Modded Launcher Command Line Interface")
         .arg(
+            Arg::with_name("list")
+                .long("list")
+                .help("Lists all SML instances")
+                .takes_value(false),
+        )
+        .arg(
             Arg::with_name("id")
                 .short("i")
                 .long("id")
@@ -45,13 +50,18 @@ fn main() -> () {
                 .takes_value(true),
         )
         .arg(
-            Arg::with_name("auth")
+            Arg::with_name("authenticate")
                 .short("a")
                 .long("auth")
                 .help("Log in through mojang")
                 .takes_value(false),
         )
         .get_matches();
+
+    if app.is_present("list") {
+        ima.display_list();
+        return ();
+    }
 
     // authentication
     if app.is_present("authenticate") {
@@ -167,10 +177,20 @@ fn main() -> () {
             overrides_path.push("overrides/");
             sml::copy_overrides(instance.get_path(), overrides_path);
 
-            let user = auth::handle_auth().expect("Couldn't get access token");
-            let user_data =
-                serde_json::to_string(&user).expect("Couldn't parse username and token");
-            fs::write(user_path, user_data.as_bytes()).expect("Couldn't save user info");
+            //let user = auth::handle_auth().expect("Couldn't get access token");
+            //let user_data =
+            //    serde_json::to_string(&user).expect("Couldn't parse username and token");
+            //fs::write(user_path, user_data.as_bytes()).expect("Couldn't save user info");
+
+            let userfile = OpenOptions::new()
+                .read(true)
+                .write(true)
+                .open(user_path)
+                .expect("Problem opening user info file");
+
+            let userinfo = serde_json::from_reader(userfile).unwrap();
+
+            let user: User = serde_json::from_value(userinfo).unwrap();
 
             let user_name = user.name;
             let access_token = user.token;

@@ -54,17 +54,8 @@ impl Invoker {
     }
 
     pub fn export_as_json(&mut self, path: PathBuf) {
-        let cmd = self.ccmd.clone().unwrap();
         let mut file = std::fs::File::create(path).expect("Error writing command to file...");
         let binpath_arg = format!(" -Djava.library.path=\"{}\" ", self.binpath.display());
-
-        // classpaths string
-        let mut cp_arg = "".to_string();
-        cp_arg.push_str(" -cp ");
-        for cp in self.classpaths.clone() {
-            let cp_str = format!("\"{}\":", cp.display());
-            cp_arg.push_str(cp_str.as_str());
-        }
 
         let custom_args = match &self.custom_args {
             Some(args) => args.as_str(),
@@ -75,7 +66,7 @@ impl Invoker {
             "java":"java",
             "binpath" : binpath_arg,
             "custom_args": custom_args,
-            "classpaths" : cp_arg,
+            "classpaths" : self.classpaths,
             "mainclass" : self.main,
             "game_args" : self.args
         });
@@ -89,6 +80,42 @@ impl Invoker {
         // make sure command is not empty
         if self.ccmd.is_some() {
             // open subprocess with command here ...
+        }
+    }
+}
+
+impl From<PathBuf> for Invoker {
+    fn from(fp: PathBuf) -> Self {
+        let file = std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(fp)
+            .expect("Couldn't open file");
+
+        let invoker_json: serde_json::Value =
+            serde_json::from_reader(file).expect("Couldn't parse invoker json file");
+
+        let binpath = invoker_json["binpath"].as_str().unwrap();
+        let c_paths = invoker_json["classpaths"].as_array().unwrap();
+        let c_args = invoker_json["custom_args"].as_str().unwrap();
+        let game_args = invoker_json["game_args"].as_str().unwrap();
+        let main_class = invoker_json["mainclass"].as_str().unwrap();
+        let java_path = invoker_json["java"].as_str().unwrap();
+
+        let mut classpaths_vec: Vec<PathBuf> = Vec::new();
+        for path in c_paths {
+            let path_str = path.as_str().unwrap();
+            classpaths_vec.push(PathBuf::from(path_str));
+        }
+
+        Invoker {
+            java: String::from(java_path),
+            custom_args: Some(String::from(c_args)),
+            binpath: PathBuf::from(binpath),
+            classpaths: classpaths_vec,
+            args: String::from(game_args),
+            main: String::from(main_class),
+            ccmd: Some(String::from("")),
         }
     }
 }

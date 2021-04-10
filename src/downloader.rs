@@ -95,7 +95,7 @@ impl Downloader {
         {
             Ok(data) => {
                 // keep retrying until some data is available
-                if data.len() == 0 {
+                if data.is_empty() {
                     return self.download(show_bar);
                 }
 
@@ -106,7 +106,7 @@ impl Downloader {
                     .unwrap();
 
                 // simply write to file
-                file.write_all(&data);
+                file.write_all(&data).unwrap();
             }
             Err(e) => {
                 panic!("Download failed! : {}", e);

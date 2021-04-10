@@ -2,7 +2,6 @@ use crate::ima::Instance;
 use crate::util;
 use crate::{cf::CFFile, downloader::Downloader};
 use ansi_term::Color::*;
-use indicatif::ProgressBar;
 use serde::{Deserialize, Serialize};
 use serde_json::*;
 use std::{fs, io, path::Path, path::PathBuf};
