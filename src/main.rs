@@ -116,9 +116,22 @@ fn main() -> () {
             );
 
             let choice = proj.get_choice();
-            let instance = ima
-                .create_instance(proj.files[choice].display.clone())
-                .expect("Error creating instance");
+            let name = proj
+                .files
+                .iter()
+                .nth(choice)
+                .unwrap()
+                .clone()
+                .name()
+                .clone()
+                .chars()
+                .map(|c| match c {
+                    ' ' => '-',
+                    _ => c,
+                })
+                .collect();
+
+            let instance = ima.create_instance(name).expect("Error creating instance");
 
             let mcv = proj.files[choice].version.clone();
             let fv = sml::get_fv_from_mcv(mcv.clone());

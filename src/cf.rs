@@ -30,6 +30,10 @@ impl CFFile {
             file
         )
     }
+
+    pub fn name(self) -> String {
+        self.name
+    }
 }
 
 #[derive(Clone)]

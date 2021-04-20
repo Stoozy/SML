@@ -51,11 +51,11 @@ impl InstanceManager {
         let mut ipath = self.path.clone();
         ipath.push(name.clone());
 
-        // create folder if it doesn't exist
         // TODO: if it exists ask user if they
         //      want to delete the old one and
         //      create a new one
 
+        // create folder if it doesn't exist
         if !ipath.exists() {
             println!("Creating instance dir at {}", ipath.display());
             fs::create_dir(ipath.as_path().clone()).expect("Error creating instances folder");

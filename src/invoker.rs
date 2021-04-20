@@ -55,7 +55,7 @@ impl Invoker {
 
     pub fn export_as_json(&mut self, path: PathBuf) {
         let mut file = std::fs::File::create(path).expect("Error writing command to file...");
-        let binpath_arg = format!("{} ", self.binpath.display());
+        let binpath_arg = format!("{}", self.binpath.display());
 
         let custom_args = match &self.custom_args {
             Some(args) => args.as_str(),
