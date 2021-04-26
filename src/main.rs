@@ -14,6 +14,7 @@ use clap::*;
 use std::fs::{self, OpenOptions};
 use std::path::PathBuf;
 use subprocess::Exec;
+use std::process::Command;
 
 use std::io::Write;
 
@@ -78,10 +79,13 @@ fn main() -> () {
             let mut cwd = invoker_path.clone();
             cwd.pop(); // gets rid of the sml_invoker.json part of the  pathbuf
 
-            let cmd = invoker.get_cmd();
-            println!("{}", cmd);
-            let process = Exec::shell(cmd).cwd(cwd);
-            process.join().unwrap();
+            invoker.invoke();
+            //let cmd = invoker.get_cmd();
+            //let process = Exec::shell(cmd).cwd(cwd);
+
+            //let process = Command::new(cmd).output().unwrap();
+            //println!("{}", process);
+            //process.join().unwrap();
         }
         None => (),
     }
@@ -168,7 +172,8 @@ fn main() -> () {
 
             // run the forge installer
             let cmd = format!("java -jar \"{}\"", forge_path.display());
-            Exec::shell(cmd).cwd(instance.get_path()).join().unwrap();
+            //Exec::shell(cmd).cwd(instance.get_path()).join().unwrap();
+            Command::new("java").arg("-jar").arg(forge_path).output().unwrap();
 
             sml::get_modslist(proj.files[choice].clone(), instance.clone());
 
@@ -269,7 +274,7 @@ fn main() -> () {
                 "java ".to_string(),
                 binpath,
                 classpaths,
-                format!("{} --assetsDir \"{}\" --assetIndex {} --gameDir \"{}\" --version  {} --username {} --accessToken {} --versionType release --userType mojang",  forge_args.unwrap(), assetspath.display(), asset_index, instance.get_path().display(), proj.files[choice].version, user_name, access_token),
+                format!("{} --assetsDir {} --assetIndex {} --gameDir {} --version  {} --username {} --accessToken {} --versionType release --userType mojang",  forge_args.unwrap(), assetspath.display(), asset_index, instance.get_path().display(), proj.files[choice].version, user_name, access_token),
                 main_class.to_string()
                 );
 

@@ -1,6 +1,8 @@
 use serde_json::json;
 use std::io::Write;
 use std::path::PathBuf;
+use std::process::Command;
+use subprocess::Exec;
 
 pub struct Invoker {
     java: String,
@@ -27,7 +29,7 @@ impl Invoker {
 
     pub fn gen_invocation(&mut self) {
         let mut cmd: String = self.java.clone();
-        cmd.push_str(format!(" -Djava.library.path=\"{}\"", self.binpath.display()).as_str());
+        cmd.push_str(format!(" -Djava.library.path={}", self.binpath.display()).as_str());
 
         match &self.custom_args {
             Some(args) => {
@@ -38,10 +40,12 @@ impl Invoker {
 
         // classpaths
         cmd.push_str(" -cp ");
+        if cfg!(windows) {cmd.push_str("\"")}
         for cp in self.classpaths.clone() {
-            let cp_str = format!("\"{}\":", cp.display());
+            let mut cp_str = if cfg!(windows){format!("{};", cp.display())} else { format!("\"{}\":", cp.display())};
             cmd.push_str(cp_str.as_str());
         }
+        if cfg!(windows) {cmd.push_str("\"")}
 
         // main class
         cmd.push_str(format!(" {} {}", self.main, self.args).as_str());
@@ -84,6 +88,52 @@ impl Invoker {
                 return self.get_cmd();
             }
         };
+    }
+
+    pub fn invoke(&mut self){   
+        //let mut inovker_path = self.binpath.clone();
+        //// pop bin/
+        //invoker_path.pop();
+        //// push filename
+        //invoker_path.push_str("sml_invoker.json");
+        //let mut invoker_file = OpenOptions::new()
+        //                        .read(true)
+        //                        .write(false)
+        //                        .open(invoker_path)
+        //                        .expect("Unable to open sml invoker file");
+
+        //let mut invoker_json = serde_json::from_reader(invoker_file);
+        //let binarg = format!("-Djava.library.path=\"{}\"", self.binpath.display());
+
+        let mut cps = "\"".to_string();
+        for cp in &self.classpaths {
+            cps.push_str(format!("{};", cp.display()).as_str());
+        }
+        cps.push_str("\"");
+        //println!("{}", cps);
+
+        println!("{}", self.ccmd.clone().unwrap());
+        let mut cwd = self.binpath.clone();
+        cwd.pop();
+
+        self.gen_invocation();
+        Exec::shell(self.ccmd.clone().unwrap()).cwd(cwd).popen();
+        
+        
+        //let cmd = Command::new("java")
+        //    .arg("-cp")
+        //    .arg(cps)
+        //    .arg(self.main.clone())
+        //    .arg(self.args.clone())
+        //    .current_dir(cwd);
+        
+        //cmd
+        //    .output()
+        //    .expect("Failed to launch instance");
+
+        //let adir = cmd.get_current_dir().unwrap();
+        //println!("{}", adir.display())
+            
     }
 }
 
