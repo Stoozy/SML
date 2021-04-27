@@ -13,21 +13,25 @@ pub struct CFFile {
 
 impl CFFile {
     pub fn get_download_url(&self) -> String {
-        let mut filename: Vec<char> = self.name.chars().collect();
+        //let mut filename: Vec<char> = self.name.chars().collect();
 
-        for i in 0..filename.len() {
-            if filename[i] == ' ' {
-                filename[i] = '+';
-            }
-        }
+        //for i in 0..filename.len() {
+        //    if filename[i] == ' ' {
+        //        filename[i] = '+';
+        //    }
+        //}
 
-        let file: String = filename.into_iter().collect();
+        //let file: String = filename.into_iter().collect();
+        let invalid_name: String = self.name.clone();
+
+        let name_with_space = invalid_name.replace("+", "%2B");
+        let valid_name = name_with_space.replace(" ", "+");
 
         format!(
             "https://media.forgecdn.net/files/{}/{}/{}",
             self.id / 1000,
             self.id % 1000,
-            file
+            valid_name
         )
     }
 

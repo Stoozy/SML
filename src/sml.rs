@@ -425,7 +425,7 @@ pub fn get_fv_from_mcv(mcv: String) -> String {
     let versions_json: serde_json::Value =
         ureq::get(versions_url).call().unwrap().into_json().unwrap();
 
-    let key = format!("{}-latest", mcv);
+    let key = format!("{}-recommended", mcv);
     versions_json["promos"][key]
         .as_str()
         .expect("Couldn't get forge versions list")

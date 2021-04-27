@@ -1,7 +1,6 @@
 use serde_json::json;
 use std::io::Write;
 use std::path::PathBuf;
-use std::process::Command;
 use subprocess::Exec;
 
 pub struct Invoker {
@@ -40,12 +39,20 @@ impl Invoker {
 
         // classpaths
         cmd.push_str(" -cp ");
-        if cfg!(windows) {cmd.push_str("\"")}
+        if cfg!(windows) {
+            cmd.push_str("\"")
+        }
         for cp in self.classpaths.clone() {
-            let mut cp_str = if cfg!(windows){format!("{};", cp.display())} else { format!("\"{}\":", cp.display())};
+            let cp_str = if cfg!(windows) {
+                format!("{};", cp.display())
+            } else {
+                format!("\"{}\":", cp.display())
+            };
             cmd.push_str(cp_str.as_str());
         }
-        if cfg!(windows) {cmd.push_str("\"")}
+        if cfg!(windows) {
+            cmd.push_str("\"")
+        }
 
         // main class
         cmd.push_str(format!(" {} {}", self.main, self.args).as_str());
@@ -90,7 +97,7 @@ impl Invoker {
         };
     }
 
-    pub fn invoke(&mut self){   
+    pub fn invoke(&mut self) {
         //let mut inovker_path = self.binpath.clone();
         //// pop bin/
         //invoker_path.pop();
@@ -117,23 +124,24 @@ impl Invoker {
         cwd.pop();
 
         self.gen_invocation();
-        Exec::shell(self.ccmd.clone().unwrap()).cwd(cwd).popen();
-        
-        
+        Exec::shell(self.ccmd.clone().unwrap())
+            .cwd(cwd)
+            .popen()
+            .unwrap();
+
         //let cmd = Command::new("java")
         //    .arg("-cp")
         //    .arg(cps)
         //    .arg(self.main.clone())
         //    .arg(self.args.clone())
         //    .current_dir(cwd);
-        
+
         //cmd
         //    .output()
         //    .expect("Failed to launch instance");
 
         //let adir = cmd.get_current_dir().unwrap();
         //println!("{}", adir.display())
-            
     }
 }
 

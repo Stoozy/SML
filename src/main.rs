@@ -13,7 +13,6 @@ pub mod util;
 use clap::*;
 use std::fs::{self, OpenOptions};
 use std::path::PathBuf;
-use subprocess::Exec;
 use std::process::Command;
 
 use std::io::Write;
@@ -171,9 +170,13 @@ fn main() -> () {
             util::pause();
 
             // run the forge installer
-            let cmd = format!("java -jar \"{}\"", forge_path.display());
+            //let cmd = format!("java -jar \"{}\"", forge_path.display());
             //Exec::shell(cmd).cwd(instance.get_path()).join().unwrap();
-            Command::new("java").arg("-jar").arg(forge_path).output().unwrap();
+            Command::new("java")
+                .arg("-jar")
+                .arg(forge_path)
+                .output()
+                .unwrap();
 
             sml::get_modslist(proj.files[choice].clone(), instance.clone());
 
