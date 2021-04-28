@@ -442,31 +442,78 @@ pub fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
 
     let instance = ima.create_instance(name).expect("Error creating instance");
 
-    let mcv = proj.files[choice].version.clone();
-    let fv = util::get_fv_from_mcv(mcv.clone());
-    let mcv_fv = format!("{}-{}", mcv, fv);
+    get_modslist(proj.files[choice].clone(), instance.clone());
+    let mut manifest_path = instance.get_path();
+    manifest_path.push("mods/manifest.json");
 
+    let manifest_file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(manifest_path)
+        .expect("Unable to open manifest file");
+
+    let manifest_json: serde_json::Value =
+        serde_json::from_reader(manifest_file).expect("Manifest contains invalid json");
+
+    // match this later, if valid, use forge version provided
+    // by modpack manifest, otherwise, use the forge `promotions_slim.json`
+    let modloader = manifest_json["minecraft"]["modLoaders"][0]["id"]
+        .as_str()
+        .unwrap();
+
+    let modloader_id: Vec<&str> = modloader.split('-').collect();
+
+    if modloader_id[0] != "forge" {
+        println!("{}", Red.paint("This is not a forge modpack. Quitting..."));
+        return ();
+    }
+
+    let mcv = manifest_json["minecraft"]["version"].as_str().unwrap();
+    let fv = modloader_id[1];
+
+    let mcv_fv = format!("{}-{}", mcv, fv);
     let mut launcher_profiles_path = instance.get_path();
     launcher_profiles_path.push("launcher_profiles.json");
     fs::write(launcher_profiles_path, "{\"profiles\": {} }")
         .expect("Error writing to launcher profiles");
 
-    // example url
-    // https://files.minecraftforge.net/maven/net/minecraftforge/forge/1.16.5-36.1.0/forge-1.16.5-36.1.0-installer.jar
-
     let forge_url = format!(
         "https://files.minecraftforge.net/maven/net/minecraftforge/forge/{}/forge-{}-installer.jar",
         mcv_fv, mcv_fv
     );
+
     let mut forge_path = instance.get_path().clone();
     forge_path.push(format!("forge-{}-installer.jar", mcv_fv));
-
     let mut forge_dloader = Downloader::new();
     forge_dloader.set_url(forge_url);
     forge_dloader.set_path(forge_path.clone());
     forge_dloader
         .download(false)
         .expect("Error downloading forge");
+
+    //let mcv = proj.files[choice].version.clone();
+    //let fv = util::get_fv_from_mcv(mcv.clone());
+    //let mcv_fv = format!("{}-{}", mcv, fv);
+
+    //let mut launcher_profiles_path = instance.get_path();
+    //launcher_profiles_path.push("launcher_profiles.json");
+    //fs::write(launcher_profiles_path, "{\"profiles\": {} }")
+    //    .expect("Error writing to launcher profiles");
+
+    //// example url
+    //// https://files.minecraftforge.net/maven/net/minecraftforge/forge/1.16.5-36.1.0/forge-1.16.5-36.1.0-installer.jar
+
+    //let forge_url = format!(
+    //    "https://files.minecraftforge.net/maven/net/minecraftforge/forge/{}/forge-{}-installer.jar",
+    //    mcv, mcv_fv
+    //);
+
+    //let mut forge_dloader = Downloader::new();
+    //forge_dloader.set_url(forge_url);
+    //forge_dloader.set_path(forge_path.clone());
+    //forge_dloader
+    //    .download(false)
+    //    .expect("Error downloading forge");
 
     println!();
     println!(
@@ -479,16 +526,13 @@ pub fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
     util::pause();
 
     // run the forge installer
-    //let cmd = format!("java -jar \"{}\"", forge_path.display());
-    //Exec::shell(cmd).cwd(instance.get_path()).join().unwrap();
     Command::new("java")
         .arg("-jar")
         .arg(forge_path)
-        .output()
+        .spawn()
         .unwrap();
 
-    get_modslist(proj.files[choice].clone(), instance.clone());
-
+    util::pause();
     let mut mods_path = instance.get_path();
     mods_path.push("mods/");
 
@@ -526,7 +570,7 @@ pub fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
 
     let mp = mods_path.clone();
 
-    get_mods(mcv.clone(), mp).unwrap();
+    get_mods(mcv.to_string(), mp).unwrap();
     println!("{}", Yellow.paint("Getting assets..."));
 
     get_assets(instance.get_path(), vanilla_version_path.clone()).unwrap();
