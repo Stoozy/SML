@@ -1,7 +1,7 @@
-use std::path::PathBuf;
 use std::{
     fs::{self, File},
     io::{self, Read, Write},
+    path::{Path, PathBuf},
 };
 
 pub fn assets_len(version_path: PathBuf) -> u64 {
@@ -96,4 +96,36 @@ pub fn get_forge_args(json: serde_json::Value) -> Option<String> {
     }
 
     Some(retstr)
+}
+
+pub fn copy_overrides(instance_path: PathBuf, overrides_path: PathBuf) {
+    copy_dir_all(overrides_path.as_path(), instance_path.as_path())
+        .expect("Could not copy overrides");
+}
+
+pub fn get_fv_from_mcv(mcv: String) -> String {
+    let versions_url =
+        "https://files.minecraftforge.net/maven/net/minecraftforge/forge/promotions_slim.json";
+    let versions_json: serde_json::Value =
+        ureq::get(versions_url).call().unwrap().into_json().unwrap();
+
+    let key = format!("{}-recommended", mcv);
+    versions_json["promos"][key]
+        .as_str()
+        .expect("Couldn't get forge versions list")
+        .to_string()
+}
+
+pub fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> {
+    fs::create_dir_all(&dst)?;
+    for entry in fs::read_dir(src)? {
+        let entry = entry?;
+        let ty = entry.file_type()?;
+        if ty.is_dir() {
+            copy_dir_all(entry.path(), dst.as_ref().join(entry.file_name()))?;
+        } else {
+            fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
+        }
+    }
+    Ok(())
 }
