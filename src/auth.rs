@@ -53,14 +53,8 @@ pub fn authenticate(email: &str, password: &str) -> Option<User> {
         Err(ureq::Error::Status(code, _resp)) => {
             println!("Got status {}", code);
 
-            if code == 403 {
-                return handle_auth();
-            } else {
-                return handle_auth();
-            }
+            handle_auth()
         }
-        Err(_) => {
-            return handle_auth();
-        }
+        Err(_) => handle_auth(),
     }
 }

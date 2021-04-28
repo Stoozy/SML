@@ -65,6 +65,7 @@ impl InstanceManager {
 
         Some(Instance::new(name, ipath))
     }
+
     pub fn get_list(&mut self) -> Vec<PathBuf> {
         let mut invoker_files: Vec<PathBuf> = Vec::new();
 
@@ -104,9 +105,5 @@ impl InstanceManager {
                 }
             }
         }
-    }
-
-    pub fn add_instance(&mut self, i: Instance) {
-        self.instances.push(i);
     }
 }
