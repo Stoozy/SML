@@ -53,11 +53,11 @@ fn main() -> () {
                 .takes_value(true),
         )
         .arg(
-            Arg::with_name("id")
+            Arg::with_name("install")
                 .short("i")
-                .long("id")
+                .long("install")
                 .value_name("ID")
-                .help("Searches for project in curseforge with given ID")
+                .help("Searches for project in curseforge with given ID and installs it")
                 .takes_value(true),
         )
         .arg(
@@ -122,7 +122,7 @@ fn main() -> () {
         fs::write(user_path.clone(), user_data.as_bytes()).expect("Couldn't save user info");
     }
 
-    match app.value_of("id") {
+    match app.value_of("install") {
         Some(id) => {
             // if there is no userinfo, stop the setup process
             if !user_path.exists() {

@@ -485,8 +485,11 @@ pub fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
         mcv_fv, mcv_fv
     );
 
+    let forge_fname = format!("forge-{}-installer.jar", mcv_fv);
+
     let mut forge_path = instance.get_path().clone();
-    forge_path.push(format!("forge-{}-installer.jar", mcv_fv));
+    forge_path.push(forge_fname);
+
     let mut forge_dloader = Downloader::new();
     forge_dloader.set_url(forge_url);
     forge_dloader.set_path(forge_path.clone());
@@ -494,25 +497,64 @@ pub fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
         .download(false)
         .expect("Error downloading forge");
 
-    println!();
-    println!(
-        "When you are prompted by forge, {}",
-        Yellow.paint("PASTE THE FOLLOWING DIRECTORY")
-    );
-    println!("{}", instance.get_path().display());
+    let mut forge_hl_path = instance.get_path();
+    forge_hl_path.push("forge-installer-headless-1.0.1.jar");
+
+    let mut forge_hl_dloader = Downloader::new();
+    forge_hl_dloader.set_url("https://github.com/xfl03/ForgeInstallerHeadless/releases/download/1.0.1/forge-installer-headless-1.0.1.jar".to_string());
+    forge_hl_dloader.set_path(forge_hl_path);
+
+    forge_hl_dloader
+        .download(false)
+        .expect("Error downloading forge headless installer");
+
     println!();
 
-    util::pause();
+    let installer_cp = match cfg!(windows) {
+        true => {
+            let forge_fname = format!("forge-{}-installer.jar", mcv_fv);
+            format!("{};forge-installer-headless-1.0.1.jar", forge_fname)
+        }
+        false => {
+            let forge_fname = format!("forge-{}-installer.jar", mcv_fv);
+            format!("{}:forge-installer-headless-1.0.1.jar", forge_fname)
+        }
+    };
+
+    let args = &[
+        "-cp",
+        installer_cp.as_str(),
+        "me.xfl03.HeadlessInstaller",
+        "-installClient",
+        ".",
+    ];
+
+    // invoke the headless installer
+    Command::new("java")
+        .args(args)
+        .current_dir(instance.get_path())
+        .output()
+        .expect("Error occured");
+
+    //util::pause();
+    //println!(
+    //    "When you are prompted by forge, {}",
+    //    Yellow.paint("PASTE THE FOLLOWING DIRECTORY")
+    //);
+    //println!("{}", instance.get_path().display());
+    //println!();
+
+    //util::pause();
 
     // run the forge installer
-    let output = Command::new("java")
-        .arg("-jar")
-        .arg(forge_path)
-        .output()
-        .unwrap();
-    io::stdout().write_all(&output.stdout).unwrap();
 
-    util::pause();
+    //Command::new("java")
+    //    .arg("-jar")
+    //    .arg(forge_path)
+    //    .output()
+    //    .unwrap();
+
+    //util::pause();
 
     let mut mods_path = instance.get_path();
     mods_path.push("mods/");
