@@ -533,7 +533,7 @@ pub fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
     Command::new("java")
         .args(args)
         .current_dir(instance.get_path())
-        .output()
+        .status()
         .expect("Error occured");
 
     //util::pause();
