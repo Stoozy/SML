@@ -1,6 +1,7 @@
 use crate::ima::{Instance, InstanceManager};
 use crate::invoker::Invoker;
 use crate::util;
+
 use crate::{
     cf::{CFFile, CFProject},
     downloader::Downloader,
@@ -14,7 +15,9 @@ use std::process::Command;
 use std::{
     fs,
     fs::{File, OpenOptions},
+    io,
     io::BufReader,
+    io::Write,
     path::PathBuf,
 };
 
@@ -491,30 +494,6 @@ pub fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
         .download(false)
         .expect("Error downloading forge");
 
-    //let mcv = proj.files[choice].version.clone();
-    //let fv = util::get_fv_from_mcv(mcv.clone());
-    //let mcv_fv = format!("{}-{}", mcv, fv);
-
-    //let mut launcher_profiles_path = instance.get_path();
-    //launcher_profiles_path.push("launcher_profiles.json");
-    //fs::write(launcher_profiles_path, "{\"profiles\": {} }")
-    //    .expect("Error writing to launcher profiles");
-
-    //// example url
-    //// https://files.minecraftforge.net/maven/net/minecraftforge/forge/1.16.5-36.1.0/forge-1.16.5-36.1.0-installer.jar
-
-    //let forge_url = format!(
-    //    "https://files.minecraftforge.net/maven/net/minecraftforge/forge/{}/forge-{}-installer.jar",
-    //    mcv, mcv_fv
-    //);
-
-    //let mut forge_dloader = Downloader::new();
-    //forge_dloader.set_url(forge_url);
-    //forge_dloader.set_path(forge_path.clone());
-    //forge_dloader
-    //    .download(false)
-    //    .expect("Error downloading forge");
-
     println!();
     println!(
         "When you are prompted by forge, {}",
@@ -526,13 +505,15 @@ pub fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
     util::pause();
 
     // run the forge installer
-    Command::new("java")
+    let output = Command::new("java")
         .arg("-jar")
         .arg(forge_path)
-        .spawn()
+        .output()
         .unwrap();
+    io::stdout().write_all(&output.stdout).unwrap();
 
     util::pause();
+
     let mut mods_path = instance.get_path();
     mods_path.push("mods/");
 
@@ -607,7 +588,7 @@ pub fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
         serde_json::from_reader(forge_json_file).expect("Unable to parse forge json file");
 
     let mut vanilla_version_path = instance.get_path().clone();
-    vanilla_version_path.push(format!("versions/{}/{}.json", mcv.clone(), mcv.clone()));
+    vanilla_version_path.push(format!("versions/{}/{}.json", mcv, mcv));
 
     let mut asset_index = proj.files[choice].version.clone();
     // remove the last . and number

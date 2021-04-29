@@ -11,10 +11,7 @@ pub mod invoker;
 pub mod util;
 
 use clap::*;
-use std::{
-    fs::{self},
-    ops::Deref,
-};
+use std::fs::{self};
 
 use std::io::Write;
 
@@ -75,7 +72,7 @@ fn main() -> () {
     match app.value_of("remove") {
         Some(id) => {
             let id_num = id.parse::<u64>().expect("Not a valid id");
-            let mut instances = ima.get_list();
+            let instances = ima.get_list();
             let invoker_path = &instances[id_num as usize];
 
             let mut cwd = invoker_path.clone();
