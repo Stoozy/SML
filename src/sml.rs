@@ -497,6 +497,7 @@ pub fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
         .download(false)
         .expect("Error downloading forge");
 
+    // forge headless installer
     let mut forge_hl_path = instance.get_path();
     forge_hl_path.push("forge-installer-headless-1.0.1.jar");
 

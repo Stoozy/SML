@@ -11,12 +11,12 @@ pub mod invoker;
 pub mod util;
 
 use clap::*;
-use std::fs::{self};
 
 use std::io::Write;
 
 use crate::ima::InstanceManager;
 use crate::invoker::Invoker;
+use std::fs::{self, OpenOptions};
 
 use ansi_term::Colour::*;
 
@@ -29,7 +29,7 @@ fn main() -> () {
 
     // create new app
     let app = App::new("SML")
-        .version("1.0")
+        .version("0.1.0")
         .author("Stoozy <mahinsemail@gmail.com>")
         .about("A Minecraft Modded Launcher Command Line Interface")
         .arg(
@@ -53,6 +53,13 @@ fn main() -> () {
                 .takes_value(true),
         )
         .arg(
+            Arg::with_name("config")
+                .short("c")
+                .long("config")
+                .help("configures instance")
+                .takes_value(false),
+        )
+        .arg(
             Arg::with_name("install")
                 .short("i")
                 .long("install")
@@ -68,6 +75,49 @@ fn main() -> () {
                 .takes_value(false),
         )
         .get_matches();
+
+    if app.is_present("list") {
+        ima.display_list();
+        return ();
+    }
+
+    if app.is_present("config") {
+        ima.display_list();
+        println!("Please enter which instance you would like to configure: ");
+
+        let instances = ima.get_list();
+        let id = util::get_u64().expect("Invalid number");
+        let invoker_file_path = &instances[id as usize];
+
+        dbg!(invoker_file_path.clone());
+        let invoker_file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(invoker_file_path.clone())
+            .expect("Unable to open sml invoker file");
+
+        let mut invoker_json: serde_json::Value =
+            serde_json::from_reader(invoker_file).expect("Invalid sml invoker json file");
+
+        let mut new_custom_args = String::new();
+
+        println!("Enter custom java flags: ");
+
+        std::io::stdin()
+            .read_line(&mut new_custom_args)
+            .expect("Unable to get user input");
+
+        // no need for newline characters
+        let len = new_custom_args.trim_end_matches(&['\r', '\n'][..]).len();
+        new_custom_args.truncate(len);
+
+        invoker_json["custom_args"] = serde_json::Value::String(new_custom_args);
+
+        std::fs::write(invoker_file_path, invoker_json.to_string())
+            .expect("Unable to write to sml invoker file");
+
+        println!("{}", Green.paint("Configuration complete!"))
+    }
 
     match app.value_of("remove") {
         Some(id) => {
@@ -106,11 +156,6 @@ fn main() -> () {
         None => (),
     }
 
-    if app.is_present("list") {
-        ima.display_list();
-        return ();
-    }
-
     // authentication
     if app.is_present("authenticate") {
         let user = auth::handle_auth().expect("Failed authentication");
@@ -126,7 +171,7 @@ fn main() -> () {
         Some(id) => {
             // if there is no userinfo, stop the setup process
             if !user_path.exists() {
-                println!("Please authenticate first!");
+                println!("{}", Red.paint("Please authenticate first!"));
                 return;
             }
             sml::forge_setup(ima, id.parse::<u64>().expect("Not a valid id"), user_path);
