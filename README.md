@@ -49,5 +49,5 @@ Forge packs with version less than 1.13.
 
 ## Issues
 
-If you encounter any issues, feel free to open an (issue)[https://github.com/Stoozy/SML/issues, "issue"] on github
+If you encounter any issues, feel free to open an [issue](https://github.com/Stoozy/SML/issues) on github
 
