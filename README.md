@@ -12,17 +12,6 @@ This is a CLI program that allows you to install and launch curseforge modpacks.
 ## Motivation
 
 I am working on this project purely for the learning experience, there are working minecraft modded launchers out there already, such as MultiMC. However, this project should benefit those who don't want a fully featured GUI program and would rather do things in a shell.
-=======
-
-## Installation
-
-Currently, there are no releases, therefore you must install via building the source code. To build the source code, you must have rust installed along with cargo. Then run the following command in the cloned github repository directory `cargo build`.
-
-Then move the binary from `../SML/target/debug/sml` to somewhere else. **Note**: If you're on windows, put it somewhere with a small path length. Somewhere like `C:\SML\sml`. If you don't do this, the program may not work properly due to the long invocation (There's a limit to how long the invocation can be, see https://docs.microsoft.com/en-us/troubleshoot/windows-client/shell-experience/command-line-string-limitation). In linux, this is not an issue.
-
-After that, you just need to add the `sml` binaries directory to `PATH`.
-From there run `sml -h` on the command line to get started using the app.
-
 
 
 ## Usage
@@ -47,7 +36,7 @@ OPTIONS:
         --launch <ID>     Launches instance with specific ID
     -r <ID>               Removes instance with the ID provided
 ```
-=======
+
 ## Forge Installer
 
 This launcher uses a wrapper class around the forge installer written by @xfl03 in order to automate the installation. See https://github.com/xfl03/ForgeInstallerHeadless

@@ -31,10 +31,11 @@ use std::fs::{self, OpenOptions};
 use ansi_term::Colour::*;
 
 fn main() -> () {
-    let mut ima = InstanceManager::new(util::get_instances_path().unwrap());
+    let mut instances_path = util::get_instances_path().unwrap();
+    let mut ima = InstanceManager::new(instances_path.clone());
 
-    let mut user_path = std::env::current_exe().unwrap();
-    user_path.pop(); // get rid of executable
+    let mut user_path = instances_path;
+    user_path.pop(); // get rid of instances dir
     user_path.push("userinfo.json");
 
     // create new app
