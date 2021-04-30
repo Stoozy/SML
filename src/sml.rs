@@ -1,6 +1,7 @@
 use crate::ima::{Instance, InstanceManager};
 use crate::invoker::Invoker;
 use crate::util;
+
 use crate::{
     cf::{CFFile, CFProject},
     downloader::Downloader,
@@ -14,7 +15,9 @@ use std::process::Command;
 use std::{
     fs,
     fs::{File, OpenOptions},
+    io,
     io::BufReader,
+    io::Write,
     path::PathBuf,
 };
 
@@ -482,8 +485,11 @@ pub fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
         mcv_fv, mcv_fv
     );
 
+    let forge_fname = format!("forge-{}-installer.jar", mcv_fv);
+
     let mut forge_path = instance.get_path().clone();
-    forge_path.push(format!("forge-{}-installer.jar", mcv_fv));
+    forge_path.push(forge_fname);
+
     let mut forge_dloader = Downloader::new();
     forge_dloader.set_url(forge_url);
     forge_dloader.set_path(forge_path.clone());
@@ -491,48 +497,66 @@ pub fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
         .download(false)
         .expect("Error downloading forge");
 
-    //let mcv = proj.files[choice].version.clone();
-    //let fv = util::get_fv_from_mcv(mcv.clone());
-    //let mcv_fv = format!("{}-{}", mcv, fv);
+    // forge headless installer
+    let mut forge_hl_path = instance.get_path();
+    forge_hl_path.push("forge-installer-headless-1.0.1.jar");
 
-    //let mut launcher_profiles_path = instance.get_path();
-    //launcher_profiles_path.push("launcher_profiles.json");
-    //fs::write(launcher_profiles_path, "{\"profiles\": {} }")
-    //    .expect("Error writing to launcher profiles");
+    let mut forge_hl_dloader = Downloader::new();
+    forge_hl_dloader.set_url("https://github.com/xfl03/ForgeInstallerHeadless/releases/download/1.0.1/forge-installer-headless-1.0.1.jar".to_string());
+    forge_hl_dloader.set_path(forge_hl_path);
 
-    //// example url
-    //// https://files.minecraftforge.net/maven/net/minecraftforge/forge/1.16.5-36.1.0/forge-1.16.5-36.1.0-installer.jar
+    forge_hl_dloader
+        .download(false)
+        .expect("Error downloading forge headless installer");
 
-    //let forge_url = format!(
-    //    "https://files.minecraftforge.net/maven/net/minecraftforge/forge/{}/forge-{}-installer.jar",
-    //    mcv, mcv_fv
+    println!();
+
+    let installer_cp = match cfg!(windows) {
+        true => {
+            let forge_fname = format!("forge-{}-installer.jar", mcv_fv);
+            format!("{};forge-installer-headless-1.0.1.jar", forge_fname)
+        }
+        false => {
+            let forge_fname = format!("forge-{}-installer.jar", mcv_fv);
+            format!("{}:forge-installer-headless-1.0.1.jar", forge_fname)
+        }
+    };
+
+    let args = &[
+        "-cp",
+        installer_cp.as_str(),
+        "me.xfl03.HeadlessInstaller",
+        "-installClient",
+        ".",
+    ];
+
+    // invoke the headless installer
+    Command::new("java")
+        .args(args)
+        .current_dir(instance.get_path())
+        .status()
+        .expect("Error occured");
+
+    //util::pause();
+    //println!(
+    //    "When you are prompted by forge, {}",
+    //    Yellow.paint("PASTE THE FOLLOWING DIRECTORY")
     //);
+    //println!("{}", instance.get_path().display());
+    //println!();
 
-    //let mut forge_dloader = Downloader::new();
-    //forge_dloader.set_url(forge_url);
-    //forge_dloader.set_path(forge_path.clone());
-    //forge_dloader
-    //    .download(false)
-    //    .expect("Error downloading forge");
-
-    println!();
-    println!(
-        "When you are prompted by forge, {}",
-        Yellow.paint("PASTE THE FOLLOWING DIRECTORY")
-    );
-    println!("{}", instance.get_path().display());
-    println!();
-
-    util::pause();
+    //util::pause();
 
     // run the forge installer
-    Command::new("java")
-        .arg("-jar")
-        .arg(forge_path)
-        .spawn()
-        .unwrap();
 
-    util::pause();
+    //Command::new("java")
+    //    .arg("-jar")
+    //    .arg(forge_path)
+    //    .output()
+    //    .unwrap();
+
+    //util::pause();
+
     let mut mods_path = instance.get_path();
     mods_path.push("mods/");
 
@@ -607,7 +631,7 @@ pub fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
         serde_json::from_reader(forge_json_file).expect("Unable to parse forge json file");
 
     let mut vanilla_version_path = instance.get_path().clone();
-    vanilla_version_path.push(format!("versions/{}/{}.json", mcv.clone(), mcv.clone()));
+    vanilla_version_path.push(format!("versions/{}/{}.json", mcv, mcv));
 
     let mut asset_index = proj.files[choice].version.clone();
     // remove the last . and number

@@ -98,20 +98,6 @@ impl Invoker {
     }
 
     pub fn invoke(&mut self) {
-        //let mut inovker_path = self.binpath.clone();
-        //// pop bin/
-        //invoker_path.pop();
-        //// push filename
-        //invoker_path.push_str("sml_invoker.json");
-        //let mut invoker_file = OpenOptions::new()
-        //                        .read(true)
-        //                        .write(false)
-        //                        .open(invoker_path)
-        //                        .expect("Unable to open sml invoker file");
-
-        //let mut invoker_json = serde_json::from_reader(invoker_file);
-        //let binarg = format!("-Djava.library.path=\"{}\"", self.binpath.display());
-
         let mut cps = "\"".to_string();
         for cp in &self.classpaths {
             cps.push_str(format!("{};", cp.display()).as_str());
@@ -128,20 +114,6 @@ impl Invoker {
             .cwd(cwd)
             .popen()
             .unwrap();
-
-        //let cmd = Command::new("java")
-        //    .arg("-cp")
-        //    .arg(cps)
-        //    .arg(self.main.clone())
-        //    .arg(self.args.clone())
-        //    .current_dir(cwd);
-
-        //cmd
-        //    .output()
-        //    .expect("Failed to launch instance");
-
-        //let adir = cmd.get_current_dir().unwrap();
-        //println!("{}", adir.display())
     }
 }
 

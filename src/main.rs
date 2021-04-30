@@ -1,3 +1,13 @@
+/*
+ * SML - A minecraft modded launcher CLI
+ *
+ *Copyright (C) 2021 Stoozy
+ *This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
+ *This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ *
+ */
+
 extern crate clap;
 extern crate ftp;
 
@@ -11,28 +21,26 @@ pub mod invoker;
 pub mod util;
 
 use clap::*;
-use std::{
-    fs::{self},
-    ops::Deref,
-};
 
 use std::io::Write;
 
 use crate::ima::InstanceManager;
 use crate::invoker::Invoker;
+use std::fs::{self, OpenOptions};
 
 use ansi_term::Colour::*;
 
 fn main() -> () {
-    let mut ima = InstanceManager::new(util::get_instances_path().unwrap());
+    let mut instances_path = util::get_instances_path().unwrap();
+    let mut ima = InstanceManager::new(instances_path.clone());
 
-    let mut user_path = std::env::current_exe().unwrap();
-    user_path.pop(); // get rid of executable
+    let mut user_path = instances_path;
+    user_path.pop(); // get rid of instances dir
     user_path.push("userinfo.json");
 
     // create new app
     let app = App::new("SML")
-        .version("1.0")
+        .version("0.1.0")
         .author("Stoozy <mahinsemail@gmail.com>")
         .about("A Minecraft Modded Launcher Command Line Interface")
         .arg(
@@ -56,11 +64,18 @@ fn main() -> () {
                 .takes_value(true),
         )
         .arg(
-            Arg::with_name("id")
+            Arg::with_name("config")
+                .short("c")
+                .long("config")
+                .help("configures instance")
+                .takes_value(false),
+        )
+        .arg(
+            Arg::with_name("install")
                 .short("i")
-                .long("id")
+                .long("install")
                 .value_name("ID")
-                .help("Searches for project in curseforge with given ID")
+                .help("Searches for project in curseforge with given ID and installs it")
                 .takes_value(true),
         )
         .arg(
@@ -72,10 +87,53 @@ fn main() -> () {
         )
         .get_matches();
 
+    if app.is_present("list") {
+        ima.display_list();
+        return ();
+    }
+
+    if app.is_present("config") {
+        ima.display_list();
+        println!("Please enter which instance you would like to configure: ");
+
+        let instances = ima.get_list();
+        let id = util::get_u64().expect("Invalid number");
+        let invoker_file_path = &instances[id as usize];
+
+        dbg!(invoker_file_path.clone());
+        let invoker_file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(invoker_file_path.clone())
+            .expect("Unable to open sml invoker file");
+
+        let mut invoker_json: serde_json::Value =
+            serde_json::from_reader(invoker_file).expect("Invalid sml invoker json file");
+
+        let mut new_custom_args = String::new();
+
+        println!("Enter custom java flags: ");
+
+        std::io::stdin()
+            .read_line(&mut new_custom_args)
+            .expect("Unable to get user input");
+
+        // no need for newline characters
+        let len = new_custom_args.trim_end_matches(&['\r', '\n'][..]).len();
+        new_custom_args.truncate(len);
+
+        invoker_json["custom_args"] = serde_json::Value::String(new_custom_args);
+
+        std::fs::write(invoker_file_path, invoker_json.to_string())
+            .expect("Unable to write to sml invoker file");
+
+        println!("{}", Green.paint("Configuration complete!"))
+    }
+
     match app.value_of("remove") {
         Some(id) => {
             let id_num = id.parse::<u64>().expect("Not a valid id");
-            let mut instances = ima.get_list();
+            let instances = ima.get_list();
             let invoker_path = &instances[id_num as usize];
 
             let mut cwd = invoker_path.clone();
@@ -109,11 +167,6 @@ fn main() -> () {
         None => (),
     }
 
-    if app.is_present("list") {
-        ima.display_list();
-        return ();
-    }
-
     // authentication
     if app.is_present("authenticate") {
         let user = auth::handle_auth().expect("Failed authentication");
@@ -125,11 +178,11 @@ fn main() -> () {
         fs::write(user_path.clone(), user_data.as_bytes()).expect("Couldn't save user info");
     }
 
-    match app.value_of("id") {
+    match app.value_of("install") {
         Some(id) => {
             // if there is no userinfo, stop the setup process
             if !user_path.exists() {
-                println!("Please authenticate first!");
+                println!("{}", Red.paint("Please authenticate first!"));
                 return;
             }
             sml::forge_setup(ima, id.parse::<u64>().expect("Not a valid id"), user_path);
