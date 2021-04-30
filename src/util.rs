@@ -43,16 +43,16 @@ pub fn pause() {
 
 pub fn get_instances_path() -> Option<PathBuf> {
     if cfg!(windows) {
-        std::env::current_exe().ok().and_then(|mut pb| {
+        return std::env::current_exe().ok().and_then(|mut pb| {
             pb.pop();
-            pb.push("instances/");
+            pb.push("instances");
             // if path dne then, create one
             // (this should be first time only)
             if !pb.exists() {
                 println!("Creating instances dir at {}", pb.display());
                 fs::create_dir_all(pb.clone()).expect("Error creating instances folder");
             }
-            Some(pb)
+            return Some(pb);
         });
     } else {
         // assuming linux here
@@ -67,7 +67,6 @@ pub fn get_instances_path() -> Option<PathBuf> {
             Err(_) => return None,
         };
     }
-    None
 }
 pub fn get_u64() -> Option<u64> {
     let mut input_text = String::new();
