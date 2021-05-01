@@ -1,6 +1,25 @@
+use serde::{Deserialize, Serialize};
+use std::fs::OpenOptions;
 use std::io::{self, Write};
+use std::path::PathBuf;
 
-use crate::sml::User;
+#[derive(Serialize, Deserialize)]
+pub struct User {
+    pub name: String,
+    pub token: String,
+}
+
+impl From<PathBuf> for User {
+    fn from(user_path: PathBuf) -> Self {
+        let userfile = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(user_path)
+            .expect("Problem opening user info file");
+        let userinfo = serde_json::from_reader(userfile).unwrap();
+        serde_json::from_value(userinfo).expect("Invalid user json file")
+    }
+}
 
 pub fn handle_auth() -> Option<User> {
     let mut email: String = "".to_string();

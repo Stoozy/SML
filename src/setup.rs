@@ -1,3 +1,5 @@
+use crate::auth;
+use crate::forge;
 use crate::ima::{Instance, InstanceManager};
 use crate::invoker::Invoker;
 use crate::util;
@@ -7,37 +9,29 @@ use crate::{
     downloader::Downloader,
 };
 use ansi_term::Color::*;
-use serde::{Deserialize, Serialize};
 use serde_json::*;
 
-use std::process::Command;
+use auth::User;
 
 use std::{
     fs,
     fs::{File, OpenOptions},
-    io,
     io::BufReader,
-    io::Write,
     path::PathBuf,
 };
 
 use zip::ZipArchive;
 
 // needed for serde json serialization
-#[derive(Serialize, Deserialize)]
-pub struct User {
-    pub name: String,
-    pub token: String,
-}
 
 pub fn get_modslist(chosen_proj: CFFile, instance: Instance) {
     let download_url = chosen_proj.get_download_url();
     let mut download_path = instance.get_path();
-    download_path.push("mods/");
+    download_path.push("mods");
     if !download_path.exists() {
         fs::create_dir(download_path.clone()).expect("Error creating mods folder");
     }
-    download_path.push(chosen_proj.name.clone());
+    download_path.push(chosen_proj.name);
 
     println!("Got download url {}", download_url);
     println!("Got download path {}", download_path.display());
@@ -49,9 +43,8 @@ pub fn get_modslist(chosen_proj: CFFile, instance: Instance) {
         .download(true)
         .expect("Error downloading modslist");
 
-    let mut mod_dirpath = instance.get_path().clone();
-
-    mod_dirpath.push("mods/");
+    let mut mod_dirpath = instance.get_path();
+    mod_dirpath.push("mods");
 
     // extract zip
     let modpack_zip = fs::File::open(download_path.clone()).expect("Couldn't open modslist");
@@ -65,7 +58,7 @@ pub fn get_modslist(chosen_proj: CFFile, instance: Instance) {
     zip.extract(extract_path)
         .expect("Error extracting mods list");
 
-    fs::remove_file(download_path.clone()).expect("Error deleting stage zip file");
+    fs::remove_file(download_path).expect("Error deleting stage zip file");
 }
 
 pub fn get_cp_from_version(
@@ -133,67 +126,65 @@ pub fn get_cp_from_version(
     retvec
 }
 
-pub fn get_libraries(libpath: PathBuf, manifests: Vec<PathBuf>) -> Result<()> {
-    for manifest in manifests {
-        let file = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .open(manifest.clone())
-            .unwrap();
+pub fn get_libraries(libpath: PathBuf, manifest: PathBuf) -> Result<()> {
+    let file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(manifest.clone())
+        .unwrap();
 
-        let json: serde_json::Value = serde_json::from_reader(file).unwrap();
-        let libraries = json["libraries"]
-            .as_array()
-            .expect("Error getting libraries.");
-        let mut downloader = Downloader::new();
+    let json: serde_json::Value = serde_json::from_reader(file).unwrap();
+    let libraries = json["libraries"]
+        .as_array()
+        .expect("Error getting libraries.");
+    let mut downloader = Downloader::new();
 
-        for (_i, lib) in libraries.iter().enumerate() {
-            let artifact_path = match lib["downloads"]["artifact"]["path"].as_str() {
-                Some(val) => val,
-                None => {
-                    // skipping empty paths
-                    break;
-                }
-            };
-
-            let mut path = libpath.clone();
-            path.push(artifact_path);
-
-            let download_url = match lib["downloads"]["artifact"]["url"].as_str() {
-                Some(val) => val,
-                None => {
-                    // skipping on empty url
-                    break;
-                }
-            };
-
-            let artifact_sha1 = match lib["downloads"]["artifact"]["sha1"].as_str() {
-                Some(hash) => hash,
-                None => {
-                    println!("No hash found , skipping ...");
-                    break;
-                }
-            };
-
-            // only download if url is valid
-            if !download_url.is_empty() {
-                downloader.set_url(download_url.to_string());
-                downloader.set_path(path);
-                downloader.set_sha1(artifact_sha1.to_string());
-                match downloader.download(true) {
-                    Ok(_) => {
-                        if downloader.verify_sha1().unwrap() {
-                            println!("{}", Green.paint("File verified!"));
-                        } else {
-                            panic!("{}", Red.paint("File not verified :("));
-                        }
-                    }
-                    Err(_) => {
-                        println!("{} {}", Red.paint("Failed to download"), artifact_path);
-                        continue;
-                    }
-                };
+    for (_i, lib) in libraries.iter().enumerate() {
+        let artifact_path = match lib["downloads"]["artifact"]["path"].as_str() {
+            Some(val) => val,
+            None => {
+                // skipping empty paths
+                break;
             }
+        };
+
+        let mut path = libpath.clone();
+        path.push(artifact_path);
+
+        let download_url = match lib["downloads"]["artifact"]["url"].as_str() {
+            Some(val) => val,
+            None => {
+                // skipping on empty url
+                break;
+            }
+        };
+
+        let artifact_sha1 = match lib["downloads"]["artifact"]["sha1"].as_str() {
+            Some(hash) => hash,
+            None => {
+                println!("No hash found , skipping ...");
+                break;
+            }
+        };
+
+        // only download if url is valid
+        if !download_url.is_empty() {
+            downloader.set_url(download_url.to_string());
+            downloader.set_path(path);
+            downloader.set_sha1(artifact_sha1.to_string());
+            match downloader.download(true) {
+                Ok(_) => {
+                    if downloader.verify_sha1().unwrap() {
+                        println!("{}", Green.paint("File verified!"));
+                    } else {
+                        panic!("{}", Red.paint("File not verified :("));
+                    }
+                }
+                Err(_) => {
+                    println!("{} {}", Red.paint("Failed to download"), artifact_path);
+                    continue;
+                }
+            };
         }
     }
 
@@ -234,7 +225,8 @@ pub fn get_assets(game_path: PathBuf, version_path: PathBuf) -> Result<()> {
         let first_two = &hash[0..2];
 
         let mut save_path = game_path.clone();
-        save_path.push("assets/objects/");
+        save_path.push("assets");
+        save_path.push("objects");
         save_path.push(first_two);
         save_path.push(hash);
 
@@ -428,6 +420,7 @@ pub fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
     let mut proj = CFProject::new(id, "https://api.cfwidget.com/".to_string());
 
     let choice = proj.get_choice();
+
     let name = proj
         .files
         .iter()
@@ -435,7 +428,6 @@ pub fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
         .unwrap()
         .clone()
         .name()
-        .clone()
         .chars()
         .map(|c| match c {
             ' ' => '-',
@@ -446,6 +438,7 @@ pub fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
     let instance = ima.create_instance(name).expect("Error creating instance");
 
     get_modslist(proj.files[choice].clone(), instance.clone());
+
     let mut manifest_path = instance.get_path();
     manifest_path.push("mods/manifest.json");
 
@@ -458,118 +451,57 @@ pub fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
     let manifest_json: serde_json::Value =
         serde_json::from_reader(manifest_file).expect("Manifest contains invalid json");
 
-    // match this later, if valid, use forge version provided
-    // by modpack manifest, otherwise, use the forge `promotions_slim.json`
     let modloader = manifest_json["minecraft"]["modLoaders"][0]["id"]
         .as_str()
         .unwrap();
 
-    let modloader_id: Vec<&str> = modloader.split('-').collect();
+    // format is like `forge-${version}`
+    let modloader_split: Vec<&str> = modloader.split('-').collect();
 
-    if modloader_id[0] != "forge" {
+    if modloader_split[0] != "forge" {
         println!("{}", Red.paint("This is not a forge modpack. Quitting..."));
-        return ();
+        return;
     }
 
     let mcv = manifest_json["minecraft"]["version"].as_str().unwrap();
-    let fv = modloader_id[1];
+    let fv = modloader_split[1];
 
-    let mcv_fv = format!("{}-{}", mcv, fv);
+    let mc_forge_version = format!("{}-{}", mcv, fv);
+
     let mut launcher_profiles_path = instance.get_path();
     launcher_profiles_path.push("launcher_profiles.json");
     fs::write(launcher_profiles_path, "{\"profiles\": {} }")
         .expect("Error writing to launcher profiles");
 
-    let forge_url = format!(
-        "https://files.minecraftforge.net/maven/net/minecraftforge/forge/{}/forge-{}-installer.jar",
-        mcv_fv, mcv_fv
-    );
-
-    let forge_fname = format!("forge-{}-installer.jar", mcv_fv);
-
-    let mut forge_path = instance.get_path().clone();
-    forge_path.push(forge_fname);
-
-    let mut forge_dloader = Downloader::new();
-    forge_dloader.set_url(forge_url);
-    forge_dloader.set_path(forge_path.clone());
-    forge_dloader
-        .download(false)
-        .expect("Error downloading forge");
-
+    forge::download_installer(instance.get_path(), mc_forge_version.clone());
     // forge headless installer
-    let mut forge_hl_path = instance.get_path();
-    forge_hl_path.push("forge-installer-headless-1.0.1.jar");
+    forge::download_headless_installer(instance.get_path());
 
-    let mut forge_hl_dloader = Downloader::new();
-    forge_hl_dloader.set_url("https://github.com/xfl03/ForgeInstallerHeadless/releases/download/1.0.1/forge-installer-headless-1.0.1.jar".to_string());
-    forge_hl_dloader.set_path(forge_hl_path);
-
-    forge_hl_dloader
-        .download(false)
-        .expect("Error downloading forge headless installer");
-
-    println!();
-
-    let installer_cp = match cfg!(windows) {
-        true => {
-            let forge_fname = format!("forge-{}-installer.jar", mcv_fv);
-            format!("{};forge-installer-headless-1.0.1.jar", forge_fname)
-        }
-        false => {
-            let forge_fname = format!("forge-{}-installer.jar", mcv_fv);
-            format!("{}:forge-installer-headless-1.0.1.jar", forge_fname)
-        }
+    let installer_cp = if cfg!(windows) {
+        format!(
+            "forge-{}-installer.jar;forge-installer-headless-1.0.1.jar",
+            mc_forge_version
+        )
+    } else {
+        format!(
+            "forge-{}-installer.jar:forge-installer-headless-1.0.1.jar",
+            mc_forge_version
+        )
     };
-
-    let args = &[
-        "-cp",
-        installer_cp.as_str(),
-        "me.xfl03.HeadlessInstaller",
-        "-installClient",
-        ".",
-    ];
-
-    // invoke the headless installer
-    Command::new("java")
-        .args(args)
-        .current_dir(instance.get_path())
-        .status()
-        .expect("Error occured");
-
-    //util::pause();
-    //println!(
-    //    "When you are prompted by forge, {}",
-    //    Yellow.paint("PASTE THE FOLLOWING DIRECTORY")
-    //);
-    //println!("{}", instance.get_path().display());
-    //println!();
-
-    //util::pause();
-
-    // run the forge installer
-
-    //Command::new("java")
-    //    .arg("-jar")
-    //    .arg(forge_path)
-    //    .output()
-    //    .unwrap();
-
-    //util::pause();
+    forge::run_forge_installation(instance.get_path(), installer_cp);
 
     let mut mods_path = instance.get_path();
-    mods_path.push("mods/");
+    mods_path.push("mods");
 
     let mut libpath = instance.get_path();
-    libpath.push("libraries/");
+    libpath.push("libraries");
 
     let mut binpath = instance.get_path();
-    binpath.push("bin/");
+    binpath.push("bin");
 
     let mut assetspath = instance.get_path();
-    assetspath.push("assets/");
+    assetspath.push("assets");
 
-    let mut version_paths = Vec::new();
     let mut forge_version_path = instance.get_path();
     forge_version_path.push(format!(
         "versions/{}-forge-{}/{}-forge-{}.json",
@@ -579,58 +511,39 @@ pub fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
     let mut vanilla_version_path = instance.get_path();
     vanilla_version_path.push(format!("versions/{}/{}.json", mcv, mcv));
 
-    version_paths.push(vanilla_version_path.clone());
-
-    let mut vp = version_paths.clone();
+    let version_paths = vec![vanilla_version_path.clone(), forge_version_path.clone()];
 
     println!("{}", Yellow.paint("Getting libraries..."));
 
-    get_binaries(vanilla_version_path.clone(), instance.get_path().clone());
-    get_libraries(libpath.clone(), version_paths.clone()).unwrap();
+    get_binaries(vanilla_version_path.clone(), instance.get_path());
 
-    vp.push(forge_version_path.clone());
+    // get libraries for both vanilla and forge
+    get_libraries(libpath.clone(), vanilla_version_path.clone()).unwrap();
+    get_libraries(libpath.clone(), forge_version_path.clone()).unwrap();
 
     println!("{}", Yellow.paint("Getting mods..."));
+    get_mods(mcv.to_string(), mods_path.clone()).unwrap();
 
-    let mp = mods_path.clone();
-
-    get_mods(mcv.to_string(), mp).unwrap();
     println!("{}", Yellow.paint("Getting assets..."));
+    get_assets(instance.get_path(), vanilla_version_path).unwrap();
 
-    get_assets(instance.get_path(), vanilla_version_path.clone()).unwrap();
+    let mut overrides_path = mods_path;
+    overrides_path.push("overrides");
 
-    let mut overrides_path = mods_path.clone();
-    overrides_path.push("overrides/");
     util::copy_overrides(instance.get_path(), overrides_path);
 
-    //let user = auth::handle_auth().expect("Couldn't get access token");
-    //let user_data =
-    //    serde_json::to_string(&user).expect("Couldn't parse username and token");
-    //fs::write(user_path, user_data.as_bytes()).expect("Couldn't save user info");
-
-    let userfile = OpenOptions::new()
-        .read(true)
-        .write(true)
-        .open(user_path)
-        .expect("Problem opening user info file");
-
-    let userinfo = serde_json::from_reader(userfile).unwrap();
-
-    let user: User = serde_json::from_value(userinfo).unwrap();
-
-    let user_name = user.name;
-    let access_token = user.token;
+    let user = User::from(user_path);
 
     let forge_json_file = OpenOptions::new()
         .read(true)
         .write(true)
-        .open(forge_version_path.clone())
+        .open(forge_version_path)
         .expect("Couldn't open forge version file");
 
     let forge_json: serde_json::Value =
         serde_json::from_reader(forge_json_file).expect("Unable to parse forge json file");
 
-    let mut vanilla_version_path = instance.get_path().clone();
+    let mut vanilla_version_path = instance.get_path();
     vanilla_version_path.push(format!("versions/{}/{}.json", mcv, mcv));
 
     let mut asset_index = proj.files[choice].version.clone();
@@ -641,9 +554,10 @@ pub fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
     let main_class = forge_json["mainClass"]
         .as_str()
         .expect("Couldn't get main class");
+
     let forge_args = util::get_forge_args(forge_json.clone());
 
-    let classes = get_cp_from_version(libpath.clone(), vp.clone());
+    let classes = get_cp_from_version(libpath, version_paths);
     let mut classpaths: Vec<PathBuf> = Vec::new();
 
     for class in classes {
@@ -654,14 +568,15 @@ pub fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
                 "java ".to_string(),
                 binpath,
                 classpaths,
-                format!("{} --assetsDir {} --assetIndex {} --gameDir {} --version  {} --username {} --accessToken {} --versionType release --userType mojang",  forge_args.unwrap(), assetspath.display(), asset_index, instance.get_path().display(), proj.files[choice].version, user_name, access_token),
+        format!("{} --assetsDir {} --assetIndex {} --gameDir {} --version  {} --username {} --accessToken {} --versionType release --userType mojang",
+				forge_args.unwrap(), assetspath.display(), asset_index, instance.get_path().display(), proj.files[choice].version, user.name, user.token),
                 main_class.to_string()
                 );
 
-    let mut cmd_fp = instance.get_path();
-    cmd_fp.push("sml_invoker.json");
+    let mut invoker_file_path = instance.get_path();
+    invoker_file_path.push("sml_invoker.json");
 
     invoker.gen_invocation();
-    invoker.export_as_json(cmd_fp);
+    invoker.export_as_json(invoker_file_path);
     println!("{}", Green.paint("Setup is complete!"));
 }

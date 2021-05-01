@@ -32,15 +32,11 @@ impl Instance {
 
 pub struct InstanceManager {
     path: PathBuf,
-    instances: Vec<Instance>,
 }
 
 impl InstanceManager {
     pub fn new(pb: PathBuf) -> InstanceManager {
-        InstanceManager {
-            path: pb,
-            instances: Vec::new(),
-        }
+        InstanceManager { path: pb }
     }
 
     pub fn get_path(&self) -> PathBuf {

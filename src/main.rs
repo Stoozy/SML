@@ -12,12 +12,12 @@ extern crate clap;
 extern crate ftp;
 
 pub mod auth;
-pub mod downloader;
-pub mod sml;
-
 pub mod cf;
+pub mod downloader;
+pub mod forge;
 pub mod ima;
 pub mod invoker;
+pub mod setup;
 pub mod util;
 
 use clap::*;
@@ -30,8 +30,8 @@ use std::fs::{self, OpenOptions};
 
 use ansi_term::Colour::*;
 
-fn main() -> () {
-    let mut instances_path = util::get_instances_path().unwrap();
+fn main() {
+    let instances_path = util::get_instances_path().unwrap();
     let mut ima = InstanceManager::new(instances_path.clone());
 
     let mut user_path = instances_path;
@@ -89,7 +89,7 @@ fn main() -> () {
 
     if app.is_present("list") {
         ima.display_list();
-        return ();
+        return;
     }
 
     if app.is_present("config") {
@@ -185,7 +185,7 @@ fn main() -> () {
                 println!("{}", Red.paint("Please authenticate first!"));
                 return;
             }
-            sml::forge_setup(ima, id.parse::<u64>().expect("Not a valid id"), user_path);
+            setup::forge_setup(ima, id.parse::<u64>().expect("Not a valid id"), user_path);
         }
         None => {}
     };
