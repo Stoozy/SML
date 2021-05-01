@@ -17,14 +17,14 @@ I am working on this project purely for the learning experience, there are worki
 ## Installation
 
 Windows:
-    - Go to releases
-    - Install using the msi to `C:\sml`
-    - This installer adds the binary to path by default
+ - Go to releases
+ - Install using the msi to `C:\sml`
+ - This installer adds the binary to path by default
 
 Linux:
-    - Go to releases
-    - Download and extract the tarball
-    - Run the install script as root
+ - Go to releases
+ - Download and extract the tarball
+ - Run the install script as root
 
 
 ## Usage
