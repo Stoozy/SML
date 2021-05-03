@@ -8,9 +8,11 @@ use std::{fs, time::Duration};
 
 extern crate crypto;
 
+use futures::future;
+
 #[derive(Clone)]
 pub struct Downloader {
-    client: reqwest::blocking::Client,
+    client: reqwest::Client,
     url: Option<String>,
     file_path: Option<PathBuf>,
     sha1: Option<String>,
@@ -18,7 +20,7 @@ pub struct Downloader {
 
 impl Downloader {
     pub fn new() -> Downloader {
-        let c = reqwest::blocking::ClientBuilder::new()
+        let c = reqwest::ClientBuilder::new()
             .timeout(Duration::from_secs(300))
             .build()
             .unwrap();
@@ -69,7 +71,7 @@ impl Downloader {
         return Some(hex == self.sha1.clone().unwrap());
     }
 
-    pub fn download(&mut self, show_bar: bool) -> Result<(), reqwest::Error> {
+    pub async fn download(&mut self, show_bar: bool) -> Result< (), Box<dyn std::error::Error>> {
         let fp = self.file_path.clone().unwrap();
         if show_bar {
             println!("Downloading {}", fp.display());
@@ -86,52 +88,48 @@ impl Downloader {
         // create file
         File::create(self.file_path.clone().unwrap()).expect("Error creating file");
 
-        match self
+        let data = self
             .client
             .get(self.url.clone().unwrap().as_str())
-            .send()
-            .unwrap()
-            .bytes()
-        {
-            Ok(data) => {
-                // keep retrying until some data is available
-                if data.is_empty() {
-                    return self.download(show_bar);
-                }
+			.send()
+			.await?
+			.bytes()
+			.await?;
+		// keep retrying until some data is available
+		//if data.is_empty() {
+		//	return self.download(show_bar).await;
+		//}
 
-                let mut file = OpenOptions::new()
-                    .read(true)
-                    .write(true)
-                    .open(fp.clone())
-                    .unwrap();
+		let mut file = OpenOptions::new()
+			.read(true)
+			.write(true)
+			.open(fp.clone())
+			.unwrap();
 
-                // simply write to file
-                file.write_all(&data).unwrap();
-            }
-            Err(e) => {
-                panic!("Download failed! : {}", e);
-            }
-        }
+		/*
+		simply write to file
+		*/
+		file.write_all(&data).unwrap();
 
-        Ok(())
+		Ok(())
     }
 
-    pub fn download_verified(&mut self) {
-        self.download(true).expect("Couldn't download assets");
+    //pub fn download_verified(&mut self) {
+    //    self.download(true).expect("Couldn't download assets");
 
-        match self.verify_sha1() {
-            Some(b) => {
-                if b {
-                    println!("{}", Green.paint("File Verified!"));
-                } else {
-                    println!("{}", Yellow.paint("File not verfied. Re-downloading..."));
-                    self.download_verified();
-                }
-            }
-            None => {
-                println!("{}", Yellow.paint("File not verfied. Re-downloading..."));
-                self.download_verified();
-            }
-        }
-    }
+    //    match self.verify_sha1() {
+    //        Some(b) => {
+    //            if b {
+    //                println!("{}", Green.paint("File Verified!"));
+    //            } else {
+    //                println!("{}", Yellow.paint("File not verfied. Re-downloading..."));
+    //                self.download_verified();
+    //            }
+    //        }
+    //        None => {
+    //            println!("{}", Yellow.paint("File not verfied. Re-downloading..."));
+    //            self.download_verified();
+    //        }
+    //    }
+    //}
 }

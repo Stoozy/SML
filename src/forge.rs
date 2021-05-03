@@ -2,7 +2,7 @@ use crate::downloader::Downloader;
 use std::path::PathBuf;
 use std::process::Command;
 
-pub fn download_installer(instance_path: PathBuf, mc_forge_version: String) {
+pub async fn download_installer(instance_path: PathBuf, mc_forge_version: String) {
     let forge_url = format!(
         "https://files.minecraftforge.net/maven/net/minecraftforge/forge/{}/forge-{}-installer.jar",
         mc_forge_version, mc_forge_version
@@ -18,10 +18,11 @@ pub fn download_installer(instance_path: PathBuf, mc_forge_version: String) {
     forge_dloader.set_path(forge_path);
     forge_dloader
         .download(false)
+        .await
         .expect("Error downloading forge");
 }
 
-pub fn download_headless_installer(instance_path: PathBuf) {
+pub async fn download_headless_installer(instance_path: PathBuf) {
     let mut forge_hl_path = instance_path;
     forge_hl_path.push("forge-installer-headless-1.0.1.jar");
 
@@ -31,6 +32,7 @@ pub fn download_headless_installer(instance_path: PathBuf) {
 
     forge_hl_dloader
         .download(false)
+		.await
         .expect("Error downloading forge headless installer");
 }
 

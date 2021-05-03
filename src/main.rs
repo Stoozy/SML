@@ -30,7 +30,8 @@ use std::fs::{self, OpenOptions};
 
 use ansi_term::Colour::*;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let instances_path = util::get_instances_path().unwrap();
     let mut ima = InstanceManager::new(instances_path.clone());
 
@@ -185,7 +186,7 @@ fn main() {
                 println!("{}", Red.paint("Please authenticate first!"));
                 return;
             }
-            setup::forge_setup(ima, id.parse::<u64>().expect("Not a valid id"), user_path);
+            setup::forge_setup(ima, id.parse::<u64>().expect("Not a valid id"), user_path).await;
         }
         None => {}
     };
