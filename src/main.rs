@@ -1,15 +1,21 @@
 /*
- * SML - A minecraft modded launcher CLI
- *
- *Copyright (C) 2021 Stoozy
- *This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
- *This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- *You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- *
+ 
+SML - A minecraft modded launcher CLI
+
+Copyright (C) 2021 Stoozy
+
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ 
  */
 
 extern crate clap;
 extern crate ftp;
+//extern crate env_logger;
+
 
 pub mod auth;
 pub mod cf;
@@ -24,14 +30,20 @@ use clap::*;
 
 use std::io::Write;
 
+
 use crate::ima::InstanceManager;
 use crate::invoker::Invoker;
 use std::fs::{self, OpenOptions};
 
 use ansi_term::Colour::*;
+use env_logger;
 
 #[tokio::main]
 async fn main() {
+    std::env::set_var("RUST_LOG", "info");
+
+    env_logger::init();
+
     let instances_path = util::get_instances_path().unwrap();
     let mut ima = InstanceManager::new(instances_path.clone());
 

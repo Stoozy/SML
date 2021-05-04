@@ -1,7 +1,7 @@
 [package]
 name = "sml"
 version = "0.1.0"
-authors = ["Stoozy <mahinsemail@gmail.com>"]
+authors = ["Stoozy"]
 description = "A minecraft launcher"
 homepage= "https://github.com/Stoozy/sml"
 edition = "2018"
@@ -26,3 +26,5 @@ ansi_term = "0.12"
 rust-crypto = "^0.2"
 reqwest = { version="0.10", features=["blocking"]}
 fs_extra = "1.2.0"
+env_logger = "0.6.1"
+log = "0.4.14"

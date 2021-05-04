@@ -6,7 +6,11 @@ use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::{fs, time::Duration};
 use std::collections::HashMap;
+
 extern crate crypto;
+
+use log::info;
+
 
 use reqwest::Url;
 use futures::StreamExt;
@@ -32,97 +36,44 @@ impl Downloader {
     pub async fn process(&self) -> Result<(), Box<dyn std::error::Error>> {
         let downloads = self.queue.clone();
         let fetches = 
-            futures::stream::iter(
-                downloads.into_iter().map(|(path, url)| 
-                    tokio::spawn(async move{
+            futures::stream::iter(downloads).map(|(path, url)|{
+                let client = &self.client;  
+                async move {
+                    let resp = client.get(Url::parse(url.as_str()).unwrap()).send().await.unwrap();
 
-                    match reqwest::get(Url::parse(url.as_str()).unwrap()).await{
-                            Ok(resp) => {
-                                match resp.bytes().await {
+                    info!("Downloading {}", url);
+                    (path, resp.bytes().await)
+                }
+            }).buffer_unordered(8);
+        
+        fetches.for_each(|(path, bytes)| async move {
+            match bytes {
+                Ok(bytes) => {
+                    let parent = path.parent().unwrap();
+                    fs::create_dir_all(parent).expect("Couldn't create parent directories");
 
-                                    Ok(bytes) => {
-                                        // if parent dir doesn't exist
-                                        // recursively create all of them
+                    if !path.exists(){
+                        File::create(path.clone())
+                            .unwrap();
+                    }
+                    // create file
+                    let mut file = OpenOptions::new()
+                        .write(true)
+                        .read(true)
+                        .open(path.clone())
+                        .unwrap();
 
-                                        if path.is_dir(){
-                                            println!("Path is a directory, cannot download, {}", path.display());
-                                            println!("Url: {}", url);
+                    file.write_all(&bytes[..]).expect("Error writing to file while downloading");
 
-                                        }else{
-                                            let parent = path.parent().unwrap();
-                                            fs::create_dir_all(parent).expect("Couldn't create parent directories");
+                    info!("Finished download. Saved to {}",path.display());
+                },
+                Err(e) => panic!("{}",e)
+            }
+            
+        }).await;
 
-                                            if !path.exists(){
-                                                File::create(path.clone())
-                                                    .unwrap();
-                                            }
-                                            // create file
-                                            let mut file = OpenOptions::new()
-                                                .write(true)
-                                                .read(true)
-                                                .open(path)
-                                                .unwrap();
+        //fetches.await;
 
-                                            file.write_all(&bytes[..]).expect("Error writing to file while downloading");
-                                            println!("Download complete")
-
-                                        }
-
-                                                                            },
-                                    Err(e) => panic!("{}", e)
-                                };
-                            },
-                            Err(e) => panic!("{}", e)
-                    };
-
-                            //dbg!(url);
-                            //dbg!(path);
-                    }))
-            ).buffer_unordered(8).collect::<Vec<_>>();
-        fetches.await;
-
-
-        //downloads.into_iter()
-        //       .map(|(path, url)|{
-        //        async move {
-
-        //            println!("Downloading {}", path.display());
-        //            println!("URL: {}", url.clone());
-
-        //            // if parent dir doesn't exist
-        //            // recursively create all of them
-        //            let parent = path.parent().unwrap();
-        //            if !parent.exists() {
-        //                fs::create_dir_all(parent).expect("Couldn't create parent directories");
-        //            }
-
-        //            // create file
-        //            File::create(path).expect("Error creating file");
-
-        //            match reqwest::get(Url::parse(url.as_str()).unwrap())
-        //                .await
-        //            {
-        //                Ok(resp) => {
-        //                    return Ok(()):
-        //                },
-        //                Err(e) =>{
-        //                    panic!("{}",e);
-        //                }
-        //            }
-
-        //        //let data = self
-        //        //    .client
-        //        //    .get(self.url.clone().unwrap().as_str())
-        //        //    .await
-        //        //    .send()
-        //        //    .await?
-        //        //    .bytes()
-        //        //    .await?;
-    
-        //        }
-
-        //    })
-        //).buffer_unordered(8);
         Ok(())
     }
 
@@ -155,65 +106,4 @@ impl Downloader {
 
 
 
-    //pub async fn download(&mut self, show_bar: bool) -> Result<(), Box<dyn std::error::Error>> {
-    //    let fp = self.file_path.clone().unwrap();
-    //    if show_bar {
-    //        println!("Downloading {}", fp.display());
-    //        println!("URL: {}", self.url.clone().unwrap());
-    //    }
-
-    //    // if parent dir doesn't exist
-    //    // recursively create all of them
-    //    let parent = fp.parent().unwrap();
-    //    if !parent.exists() {
-    //        fs::create_dir_all(parent).expect("Couldn't create parent directories");
-    //    }
-
-    //    // create file
-    //    File::create(self.file_path.clone().unwrap()).expect("Error creating file");
-
-    //    let data = self
-    //        .client
-    //        .get(self.url.clone().unwrap().as_str())
-    //        .send()
-    //        .await?
-    //        .bytes()
-    //        .await?;
-    //    // keep retrying until some data is available
-    //    //if data.is_empty() {
-    //    //	return self.download(show_bar).await;
-    //    //}
-
-    //    let mut file = OpenOptions::new()
-    //        .read(true)
-    //        .write(true)
-    //        .open(fp.clone())
-    //        .unwrap();
-
-    //    /*
-    //    simply write to file
-    //    */
-    //    file.write_all(&data).unwrap();
-
-    //    Ok(())
-    //}
-
-    //pub fn download_verified(&mut self) {
-    //    self.download(true).expect("Couldn't download assets");
-
-    //    match self.verify_sha1() {
-    //        Some(b) => {
-    //            if b {
-    //                println!("{}", Green.paint("File Verified!"));
-    //            } else {
-    //                println!("{}", Yellow.paint("File not verfied. Re-downloading..."));
-    //                self.download_verified();
-    //            }
-    //        }
-    //        None => {
-    //            println!("{}", Yellow.paint("File not verfied. Re-downloading..."));
-    //            self.download_verified();
-    //        }
-    //    }
-    //}
 }

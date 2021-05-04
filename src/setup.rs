@@ -11,6 +11,7 @@ use crate::{
 use ansi_term::Color::*;
 use serde_json::*;
 
+use log::info;
 use crate::auth::User;
 
 use std::{
@@ -615,5 +616,5 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
 
     invoker.gen_invocation();
     invoker.export_as_json(invoker_file_path);
-    println!("{}", Green.paint("Setup is complete!"));
+    info!("{}", Green.paint("Setup is complete!"));
 }
