@@ -218,7 +218,8 @@ pub async fn get_asset_downloads(
 
     // download assetIndex json file
     let mut index_save_path = game_path.clone();
-    index_save_path.push("assets/indexes/");
+    index_save_path.push("assets");
+    index_save_path.push("indexes");
     index_save_path.push(format!(
         "{}.json",
         version["assetIndex"]["id"].as_str().unwrap()
@@ -551,6 +552,11 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
             .await
             .unwrap()
     );
+
+    Downloader::new(downloads)
+        .process()
+        .await
+        .expect("Unable to finish download");
 
     //dbg!(downloads);
     //let ipc = instance.get_path();

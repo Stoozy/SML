@@ -34,7 +34,7 @@ impl Downloader {
         let fetches = 
             futures::stream::iter(
                 downloads.into_iter().map(|(path, url)| 
-                    async move{
+                    tokio::spawn(async move{
 
                     match reqwest::get(Url::parse(url.as_str()).unwrap()).await{
                             Ok(resp) => {
@@ -77,7 +77,7 @@ impl Downloader {
 
                             //dbg!(url);
                             //dbg!(path);
-                    })
+                    }))
             ).buffer_unordered(8).collect::<Vec<_>>();
         fetches.await;
 
