@@ -2,7 +2,10 @@ use crate::downloader::Downloader;
 use std::path::PathBuf;
 use std::process::Command;
 
-pub fn download_installer(instance_path: PathBuf, mc_forge_version: String) {
+use std::collections::HashMap;
+pub async fn download_installer(instance_path: PathBuf, mc_forge_version: String) {
+    
+    let mut forge_map = HashMap::new();
     let forge_url = format!(
         "https://files.minecraftforge.net/maven/net/minecraftforge/forge/{}/forge-{}-installer.jar",
         mc_forge_version, mc_forge_version
@@ -13,25 +16,42 @@ pub fn download_installer(instance_path: PathBuf, mc_forge_version: String) {
     let mut forge_path = instance_path;
     forge_path.push(forge_fname);
 
-    let mut forge_dloader = Downloader::new();
-    forge_dloader.set_url(forge_url);
-    forge_dloader.set_path(forge_path);
-    forge_dloader
-        .download(false)
-        .expect("Error downloading forge");
+    forge_map.insert(forge_path, forge_url);
+    Downloader::new(forge_map)
+        .process()
+        .await
+        .expect("Unable to download file");
+
+    //let mut forge_dloader = Downloader::new();
+    //forge_dloader.set_url(forge_url);
+    //forge_dloader.set_path(forge_path);
+    //forge_dloader
+    //    .download(false)
+    //    .await
+    //    .expect("Error downloading forge");
 }
 
-pub fn download_headless_installer(instance_path: PathBuf) {
+pub async fn download_headless_installer(instance_path: PathBuf) {
+    let mut forge_hl_map = HashMap::new();
+
     let mut forge_hl_path = instance_path;
     forge_hl_path.push("forge-installer-headless-1.0.1.jar");
 
-    let mut forge_hl_dloader = Downloader::new();
-    forge_hl_dloader.set_url("https://github.com/xfl03/ForgeInstallerHeadless/releases/download/1.0.1/forge-installer-headless-1.0.1.jar".to_string());
-    forge_hl_dloader.set_path(forge_hl_path);
+    let forge_hl_url = "https://github.com/xfl03/ForgeInstallerHeadless/releases/download/1.0.1/forge-installer-headless-1.0.1.jar".to_string();
 
-    forge_hl_dloader
-        .download(false)
-        .expect("Error downloading forge headless installer");
+    forge_hl_map.insert(forge_hl_path, forge_hl_url);
+    Downloader::new(forge_hl_map)
+        .process()
+        .await
+        .expect("Unable to download file");
+
+    //let mut forge_hl_dloader = Downloader::new();
+    //forge_hl_dloader.set_path(forge_hl_path);
+
+    //forge_hl_dloader
+    //    .download(false)
+    //    .await
+    //    .expect("Error downloading forge headless installer");
 }
 
 pub fn run_forge_installation(instance_path: PathBuf, installer_cp: String) {

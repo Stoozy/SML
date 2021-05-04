@@ -11,9 +11,11 @@ use crate::{
 use ansi_term::Color::*;
 use serde_json::*;
 
-use auth::User;
+use log::info;
+use crate::auth::User;
 
 use std::{
+    collections::HashMap,
     fs,
     fs::{File, OpenOptions},
     io::BufReader,
@@ -24,7 +26,7 @@ use zip::ZipArchive;
 
 // needed for serde json serialization
 
-pub fn get_modslist(chosen_proj: CFFile, instance: Instance) {
+pub async fn get_modslist(chosen_proj: CFFile, instance: Instance) {
     let download_url = chosen_proj.get_download_url();
     let mut download_path = instance.get_path();
     download_path.push("mods");
@@ -32,16 +34,22 @@ pub fn get_modslist(chosen_proj: CFFile, instance: Instance) {
         fs::create_dir(download_path.clone()).expect("Error creating mods folder");
     }
     download_path.push(chosen_proj.name);
+    let mut downloads = HashMap::new();
+    downloads.insert(download_path.clone(), download_url);
+    let downloader = Downloader::new(downloads);
+    
+    downloader.process().await.unwrap();
 
-    println!("Got download url {}", download_url);
-    println!("Got download path {}", download_path.display());
+    //println!("Got download url {}", download_url);
+    //println!("Got download path {}", download_path.display());
 
-    let mut downloader = Downloader::new();
-    downloader.set_url(download_url);
-    downloader.set_path(download_path.clone());
-    downloader
-        .download(true)
-        .expect("Error downloading modslist");
+    //let mut downloader = Downloader::new();
+    //downloader.set_url(download_url);
+    //downloader.set_path(download_path.clone());
+    //downloader
+    //    .download(true)
+    //    .await
+    //    .expect("Error downloading modslist");
 
     let mut mod_dirpath = instance.get_path();
     mod_dirpath.push("mods");
@@ -126,18 +134,22 @@ pub fn get_cp_from_version(
     retvec
 }
 
-pub fn get_libraries(libpath: PathBuf, manifest: PathBuf) -> Result<()> {
+pub async fn get_library_downloads(
+    libpath: PathBuf,
+    manifest: PathBuf,
+) -> Option<HashMap<PathBuf, String>> {
+    let mut lib_downloads: HashMap<PathBuf, String> = HashMap::new();
+
     let file = OpenOptions::new()
         .read(true)
         .write(true)
-        .open(manifest.clone())
+        .open(manifest)
         .unwrap();
 
     let json: serde_json::Value = serde_json::from_reader(file).unwrap();
     let libraries = json["libraries"]
         .as_array()
         .expect("Error getting libraries.");
-    let mut downloader = Downloader::new();
 
     for (_i, lib) in libraries.iter().enumerate() {
         let artifact_path = match lib["downloads"]["artifact"]["path"].as_str() {
@@ -159,62 +171,67 @@ pub fn get_libraries(libpath: PathBuf, manifest: PathBuf) -> Result<()> {
             }
         };
 
-        let artifact_sha1 = match lib["downloads"]["artifact"]["sha1"].as_str() {
-            Some(hash) => hash,
-            None => {
-                println!("No hash found , skipping ...");
-                break;
-            }
-        };
+        //let artifact_sha1 = match lib["downloads"]["artifact"]["sha1"].as_str() {
+        //    Some(hash) => hash,
+        //    None => {
+        //        println!("No hash found , skipping ...");
+        //        break;
+        //    }
+        //};
 
         // only download if url is valid
         if !download_url.is_empty() {
-            downloader.set_url(download_url.to_string());
-            downloader.set_path(path);
-            downloader.set_sha1(artifact_sha1.to_string());
-            match downloader.download(true) {
-                Ok(_) => {
-                    if downloader.verify_sha1().unwrap() {
-                        println!("{}", Green.paint("File verified!"));
-                    } else {
-                        panic!("{}", Red.paint("File not verified :("));
-                    }
-                }
-                Err(_) => {
-                    println!("{} {}", Red.paint("Failed to download"), artifact_path);
-                    continue;
-                }
-            };
+            lib_downloads.insert(path, download_url.to_string());
+
+            //downloader.set_url(download_url.to_string());
+            //downloader.set_path(path);
+            //downloader.set_sha1(artifact_sha1.to_string());
+
+            //match downloader.download(true).await {
+            //    Ok(_) => {
+            //        if downloader.verify_sha1().unwrap() {
+            //            println!("{}", Green.paint("File verified!"));
+            //        } else {
+            //            panic!("{}", Red.paint("File not verified :("));
+            //        }
+            //    }
+            //    Err(_) => {
+            //        println!("{} {}", Red.paint("Failed to download"), artifact_path);
+            //        continue;
+            //    }
+            //};
         }
     }
 
-    Ok(())
+    Some(lib_downloads)
 }
 
-pub fn get_assets(game_path: PathBuf, version_path: PathBuf) -> Result<()> {
+pub async fn get_asset_downloads(
+    game_path: PathBuf,
+    version_path: PathBuf,
+) -> Option<HashMap<PathBuf, String>> {
+    let mut asset_downloads: HashMap<PathBuf, String> = HashMap::new();
+
     let version_file = File::open(version_path).unwrap();
     let version: serde_json::Value = serde_json::from_reader(version_file).unwrap();
 
-    let url = match version["assetIndex"]["url"].as_str() {
-        Some(val) => val,
-        None => {
-            println!("Error getting assetIndex. Skipping.");
-            return Ok(());
-        }
-    };
+    let url = version["assetIndex"]["url"].as_str()?;
 
     // download assetIndex json file
     let mut index_save_path = game_path.clone();
-    index_save_path.push("assets/indexes/");
+    index_save_path.push("assets");
+    index_save_path.push("indexes");
     index_save_path.push(format!(
         "{}.json",
         version["assetIndex"]["id"].as_str().unwrap()
     ));
 
-    let mut dloader = Downloader::new();
-    dloader.set_url(url.to_string());
-    dloader.set_path(index_save_path);
-    dloader.download(false).expect("Couldn't get assets");
+    asset_downloads.insert(index_save_path, url.to_string());
+
+    //let mut dloader = Downloader::new();
+    //dloader.set_url(url.to_string());
+    //dloader.set_path(index_save_path);
+    //dloader.download(false).await.expect("Couldn't get assets");
 
     let assets_json: serde_json::Value = ureq::get(url).call().unwrap().into_json().unwrap();
 
@@ -235,17 +252,18 @@ pub fn get_assets(game_path: PathBuf, version_path: PathBuf) -> Result<()> {
             first_two, hash
         );
 
-        let mut downloader = Downloader::new();
-        downloader.set_path(save_path);
-        downloader.set_url(download_url);
-        downloader.set_sha1(hash.to_string());
-        downloader.download_verified();
+        asset_downloads.insert(save_path, download_url);
     }
 
-    Ok(())
+    Some(asset_downloads)
 }
 
-pub fn get_mods(mc_version: String, mods_path: PathBuf) -> Result<()> {
+pub async fn get_mod_downloads(
+    mc_version: String,
+    mods_path: PathBuf,
+) -> Option<HashMap<PathBuf, String>> {
+    let mut downloads_map: HashMap<PathBuf, String> = HashMap::new();
+
     let mut mods_manifest_path = mods_path.clone();
     mods_manifest_path.push("manifest.json");
 
@@ -268,6 +286,7 @@ pub fn get_mods(mc_version: String, mods_path: PathBuf) -> Result<()> {
 
         let for_versions = mod_json["versions"].as_array();
 
+        // if versions key exists in the mod manifest json, use that
         if for_versions.is_some() {
             for version in for_versions.unwrap() {
                 let v = version.as_str().unwrap();
@@ -286,64 +305,50 @@ pub fn get_mods(mc_version: String, mods_path: PathBuf) -> Result<()> {
                             };
 
                             let download_url = cf_file.get_download_url();
+
                             let mut download_path = mods_path.clone();
                             download_path.push(cf_file.name);
 
-                            let mut downloader = Downloader::new();
-                            downloader.set_path(download_path);
-                            downloader.set_url(download_url);
-                            match downloader.download(true) {
-                                Ok(_) => return Ok(()),
-                                Err(e) => panic!("{}", e),
-                            }
+                            // push to map instead of downloading here directly
+                            downloads_map.insert(download_path, download_url);
                         }
                     }
                 }
             }
-        }
+        } else {
+            let modfiles = match mod_json["files"].as_array() {
+                Some(val) => val,
+                None => {
+                    println!("Could not parse files list");
+                    continue;
+                }
+            };
 
-        let modfiles = match mod_json["files"].as_array() {
-            Some(val) => val,
-            None => {
-                println!("Could not parse files list");
-                continue;
-            }
-        };
+            for (_i, modfile) in modfiles.iter().enumerate() {
+                // found right mod file now download it
+                if modfile["id"].as_u64().unwrap() == file_id {
+                    let cf_file = CFFile {
+                        id: file_id,
+                        display: modfile["display"].as_str().unwrap().to_string(),
+                        name: modfile["name"].as_str().unwrap().to_string(),
+                        ftype: modfile["type"].as_str().unwrap().to_string(),
+                        version: modfile["version"].as_str().unwrap().to_string(),
+                    };
 
-        for (_i, modfile) in modfiles.iter().enumerate() {
-            // found right mod file now download it
-            if modfile["id"].as_u64().unwrap() == file_id {
-                let cf_file = CFFile {
-                    id: file_id,
-                    display: modfile["display"].as_str().unwrap().to_string(),
-                    name: modfile["name"].as_str().unwrap().to_string(),
-                    ftype: modfile["type"].as_str().unwrap().to_string(),
-                    version: modfile["version"].as_str().unwrap().to_string(),
-                };
+                    let download_url = cf_file.get_download_url();
+                    let mut download_path = mods_path.clone();
+                    download_path.push(cf_file.name);
 
-                let download_url = cf_file.get_download_url();
-                let mut download_path = mods_path.clone();
-                download_path.push(cf_file.name);
-
-                let mut downloader = Downloader::new();
-                downloader.set_path(download_path);
-                downloader.set_url(download_url);
-                match downloader.download(true) {
-                    Ok(_) => {
-                        // can't verify files
-                        // sha1 hash doesn't
-                        // exist
-                    }
-                    Err(e) => panic!("{}", e),
+                    downloads_map.insert(download_path, download_url);
                 }
             }
         }
     }
 
-    Ok(())
+    Some(downloads_map)
 }
 
-pub fn get_binaries(version_path: PathBuf, instance_path: PathBuf) -> () {
+pub async fn get_binaries(version_path: PathBuf, instance_path: PathBuf) {
     let manifest_file = OpenOptions::new()
         .read(true)
         .write(true)
@@ -358,6 +363,7 @@ pub fn get_binaries(version_path: PathBuf, instance_path: PathBuf) -> () {
 
     let mut jarpaths: Vec<PathBuf> = Vec::new();
 
+    let mut download_map : HashMap<PathBuf, String> = HashMap::new();
     // Download jars
     for lib in libs {
         if !lib["downloads"]["classifiers"].is_null() {
@@ -379,21 +385,32 @@ pub fn get_binaries(version_path: PathBuf, instance_path: PathBuf) -> () {
                     None => break,
                 };
 
+
                 let mut fullpath = instance_path.clone();
-                fullpath.push("libraries/");
+                fullpath.push("libraries");
                 fullpath.push(path);
 
+                download_map.insert(fullpath, url.to_string());
                 jarpaths.push(PathBuf::from(path));
 
-                let mut dloader = Downloader::new();
-                dloader.set_url(url.to_string());
-                dloader.set_path(PathBuf::from(fullpath));
-                dloader.download(true).expect("Failed to download Binaries");
+                //let mut dloader = Downloader::new();
+                //dloader.set_url(url.to_string());
+                //dloader.set_path(PathBuf::from(fullpath));
+                //dloader
+                //    .download(true)
+                //    .await
+                //    .expect("Failed to download Binaries");
             } else {
                 panic!("Couldn't detect OS");
             }
         }
     }
+
+    // Download binaries
+    Downloader::new(download_map)
+        .process()
+        .await
+        .expect("Unable to download file");
 
     // Extract jars
     for jarpath in jarpaths {
@@ -416,7 +433,7 @@ pub fn get_binaries(version_path: PathBuf, instance_path: PathBuf) -> () {
     }
 }
 
-pub fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
+pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
     let mut proj = CFProject::new(id, "https://api.cfwidget.com/".to_string());
 
     let choice = proj.get_choice();
@@ -437,10 +454,11 @@ pub fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
 
     let instance = ima.create_instance(name).expect("Error creating instance");
 
-    get_modslist(proj.files[choice].clone(), instance.clone());
+    get_modslist(proj.files[choice].clone(), instance.clone()).await;
 
     let mut manifest_path = instance.get_path();
-    manifest_path.push("mods/manifest.json");
+    manifest_path.push("mods");
+    manifest_path.push("manifest.json");
 
     let manifest_file = OpenOptions::new()
         .read(true)
@@ -473,9 +491,9 @@ pub fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
     fs::write(launcher_profiles_path, "{\"profiles\": {} }")
         .expect("Error writing to launcher profiles");
 
-    forge::download_installer(instance.get_path(), mc_forge_version.clone());
+    forge::download_installer(instance.get_path(), mc_forge_version.clone()).await;
     // forge headless installer
-    forge::download_headless_installer(instance.get_path());
+    forge::download_headless_installer(instance.get_path()).await;
 
     let installer_cp = if cfg!(windows) {
         format!(
@@ -513,19 +531,39 @@ pub fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
 
     let version_paths = vec![vanilla_version_path.clone(), forge_version_path.clone()];
 
-    println!("{}", Yellow.paint("Getting libraries..."));
-
-    get_binaries(vanilla_version_path.clone(), instance.get_path());
+    let vvpc = vanilla_version_path.clone();
+    let ip = instance.get_path();
+    tokio::spawn(async move {
+        get_binaries(vvpc, ip).await;
+    });
 
     // get libraries for both vanilla and forge
-    get_libraries(libpath.clone(), vanilla_version_path.clone()).unwrap();
-    get_libraries(libpath.clone(), forge_version_path.clone()).unwrap();
+    let vvpc = vanilla_version_path.clone();
+    let fvpc = forge_version_path.clone();
 
-    println!("{}", Yellow.paint("Getting mods..."));
-    get_mods(mcv.to_string(), mods_path.clone()).unwrap();
+    // get a list of all downloads
+    let mut downloads = get_library_downloads(libpath.clone(), vvpc).await.unwrap();
+    downloads.extend(get_library_downloads(libpath.clone(), fvpc).await.unwrap());
 
-    println!("{}", Yellow.paint("Getting assets..."));
-    get_assets(instance.get_path(), vanilla_version_path).unwrap();
+    let mpc = mods_path.clone();
+    let mcvc = mcv.to_owned();
+    downloads.extend(get_mod_downloads(mcvc, mpc).await.unwrap());
+    downloads.extend(
+        get_asset_downloads(instance.get_path(), vanilla_version_path)
+            .await
+            .unwrap()
+    );
+
+    Downloader::new(downloads)
+        .process()
+        .await
+        .expect("Unable to finish download");
+
+    //dbg!(downloads);
+    //let ipc = instance.get_path();
+    //tokio::spawn(async move {
+    //get_assets(ipc, vanilla_version_path).await.unwrap();
+    //});
 
     let mut overrides_path = mods_path;
     overrides_path.push("overrides");
@@ -578,5 +616,5 @@ pub fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
 
     invoker.gen_invocation();
     invoker.export_as_json(invoker_file_path);
-    println!("{}", Green.paint("Setup is complete!"));
+    info!("{}", Green.paint("Setup is complete!"));
 }
