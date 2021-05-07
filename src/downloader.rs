@@ -1,11 +1,11 @@
-use ansi_term::Color::*;
-use crypto::{digest::Digest, sha1::Sha1};
+//use crypto::{digest::Digest, sha1::Sha1};
 use std::fs::File;
 use std::fs::OpenOptions;
-use std::io::{Read, Write};
+use std::io::{Write};
 use std::path::PathBuf;
 use std::{fs, time::Duration};
 use std::collections::HashMap;
+//use reqwest::Client;
 
 extern crate crypto;
 
@@ -35,40 +35,48 @@ impl Downloader {
 
     pub async fn process(&self) -> Result<(), Box<dyn std::error::Error>> {
         let downloads = self.queue.clone();
+
         let fetches = 
             futures::stream::iter(downloads).map(|(path, url)|{
-                let client = &self.client;  
-                async move {
+                let client = self.client.clone();
+                tokio::spawn(async move {
                     let resp = client.get(Url::parse(url.as_str()).unwrap()).send().await.unwrap();
 
                     info!("Downloading {}", url);
                     (path, resp.bytes().await)
-                }
+                })
             }).buffer_unordered(8);
         
-        fetches.for_each(|(path, bytes)| async move {
-            match bytes {
-                Ok(bytes) => {
-                    let parent = path.parent().unwrap();
-                    fs::create_dir_all(parent).expect("Couldn't create parent directories");
+        fetches.for_each(|r| async move {
+            match r {
+                Ok((path, bytes)) => {
+                    match bytes {
+                        Ok(bytes) => {
+                            let parent = path.parent().unwrap();
+                            fs::create_dir_all(parent).expect("Couldn't create parent directories");
 
-                    if !path.exists(){
-                        File::create(path.clone())
-                            .unwrap();
+                            if !path.exists(){
+                                File::create(path.clone())
+                                    .unwrap();
+                            }
+                            // create file
+                            let mut file = OpenOptions::new()
+                                .write(true)
+                                .read(true)
+                                .open(path.clone())
+                                .unwrap();
+
+                            file.write_all(&bytes[..]).expect("Error writing to file while downloading");
+
+                            info!("Finished download. Saved to {}",path.display());
+                        },
+                        Err(e) => panic!("{}",e)
                     }
-                    // create file
-                    let mut file = OpenOptions::new()
-                        .write(true)
-                        .read(true)
-                        .open(path.clone())
-                        .unwrap();
-
-                    file.write_all(&bytes[..]).expect("Error writing to file while downloading");
-
-                    info!("Finished download. Saved to {}",path.display());
                 },
-                Err(e) => panic!("{}",e)
+                Err(e) => panic!("{}", e)
+                
             }
+            
             
         }).await;
 
@@ -103,7 +111,6 @@ impl Downloader {
 
     //    return Some(hex == self.sha1.clone().unwrap());
     //}
-
 
 
 }

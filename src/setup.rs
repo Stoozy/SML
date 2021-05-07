@@ -1,4 +1,4 @@
-use crate::auth;
+//use crate::auth;
 use crate::forge;
 use crate::ima::{Instance, InstanceManager};
 use crate::invoker::Invoker;
@@ -9,7 +9,7 @@ use crate::{
     downloader::Downloader,
 };
 use ansi_term::Color::*;
-use serde_json::*;
+//use serde_json::*;
 
 use log::info;
 use crate::auth::User;
@@ -39,17 +39,6 @@ pub async fn get_modslist(chosen_proj: CFFile, instance: Instance) {
     let downloader = Downloader::new(downloads);
     
     downloader.process().await.unwrap();
-
-    //println!("Got download url {}", download_url);
-    //println!("Got download path {}", download_path.display());
-
-    //let mut downloader = Downloader::new();
-    //downloader.set_url(download_url);
-    //downloader.set_path(download_path.clone());
-    //downloader
-    //    .download(true)
-    //    .await
-    //    .expect("Error downloading modslist");
 
     let mut mod_dirpath = instance.get_path();
     mod_dirpath.push("mods");
@@ -182,24 +171,6 @@ pub async fn get_library_downloads(
         // only download if url is valid
         if !download_url.is_empty() {
             lib_downloads.insert(path, download_url.to_string());
-
-            //downloader.set_url(download_url.to_string());
-            //downloader.set_path(path);
-            //downloader.set_sha1(artifact_sha1.to_string());
-
-            //match downloader.download(true).await {
-            //    Ok(_) => {
-            //        if downloader.verify_sha1().unwrap() {
-            //            println!("{}", Green.paint("File verified!"));
-            //        } else {
-            //            panic!("{}", Red.paint("File not verified :("));
-            //        }
-            //    }
-            //    Err(_) => {
-            //        println!("{} {}", Red.paint("Failed to download"), artifact_path);
-            //        continue;
-            //    }
-            //};
         }
     }
 
@@ -227,11 +198,6 @@ pub async fn get_asset_downloads(
     ));
 
     asset_downloads.insert(index_save_path, url.to_string());
-
-    //let mut dloader = Downloader::new();
-    //dloader.set_url(url.to_string());
-    //dloader.set_path(index_save_path);
-    //dloader.download(false).await.expect("Couldn't get assets");
 
     let assets_json: serde_json::Value = ureq::get(url).call().unwrap().into_json().unwrap();
 
@@ -393,13 +359,6 @@ pub async fn get_binaries(version_path: PathBuf, instance_path: PathBuf) {
                 download_map.insert(fullpath, url.to_string());
                 jarpaths.push(PathBuf::from(path));
 
-                //let mut dloader = Downloader::new();
-                //dloader.set_url(url.to_string());
-                //dloader.set_path(PathBuf::from(fullpath));
-                //dloader
-                //    .download(true)
-                //    .await
-                //    .expect("Failed to download Binaries");
             } else {
                 panic!("Couldn't detect OS");
             }
@@ -583,11 +542,14 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
 
     let mut vanilla_version_path = instance.get_path();
     vanilla_version_path.push(format!("versions/{}/{}.json", mcv, mcv));
-
-    let mut asset_index = proj.files[choice].version.clone();
-    // remove the last . and number
-    asset_index.remove(asset_index.len() - 1);
-    asset_index.remove(asset_index.len() - 1);
+    
+    let version_file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(vanilla_version_path)
+        .unwrap();
+    let version : serde_json::Value = serde_json::from_reader(version_file).expect("Unable to parse version file");
+    let asset_index =  version["assetIndex"]["id"].as_str().unwrap();
 
     let main_class = forge_json["mainClass"]
         .as_str()
