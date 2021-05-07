@@ -557,7 +557,7 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
 
     let forge_args = util::get_forge_args(forge_json.clone());
 
-    let classes = get_cp_from_version(libpath, version_paths);
+    let classes = get_cp_from_version(PathBuf::from("libraries"), version_paths);
     let mut classpaths: Vec<PathBuf> = Vec::new();
 
     for class in classes {
