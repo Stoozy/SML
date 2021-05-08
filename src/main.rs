@@ -170,12 +170,6 @@ async fn main() {
             cwd.pop(); // gets rid of the sml_invoker.json part of the  pathbuf
 
             invoker.invoke();
-            //let cmd = invoker.get_cmd();
-            //let process = Exec::shell(cmd).cwd(cwd);
-
-            //let process = Command::new(cmd).output().unwrap();
-            //println!("{}", process);
-            //process.join().unwrap();
         }
         None => (),
     }

@@ -206,18 +206,6 @@ pub async fn get_asset_downloads(
         ).send().await.unwrap();
     let assets_json : serde_json::Value = serde_json::from_str(resp.text().await.unwrap().as_str()).unwrap();
 
-
-    //let assets_json : serde_json::Value = serde_json::from_str(
-    //    reqwest::get(url)
-    //        .await
-    //        .unwrap()
-    //        .text()
-    //        .await
-    //        .unwrap()
-    //        .as_str()
-    //    ).unwrap();
-    //let assets_json: serde_json::Value = ureq::get(url).call().unwrap().into_json().unwrap();
-
     let asset_objects = assets_json["objects"].as_object().unwrap();
 
     for (_i, object) in asset_objects.iter().enumerate() {
@@ -271,11 +259,6 @@ pub async fn get_mod_downloads(
         ).send().await.unwrap();
         let mod_json : serde_json::Value = serde_json::from_str(resp.text().await.unwrap().as_str()).unwrap();
 
-            //ureq::get(format!("https://api.cfwidget.com/{}", proj_id).as_str())
-            //    .call()
-            //    .unwrap()
-            //    .into_json()
-            //    .unwrap();
 
         let for_versions = mod_json["versions"].as_array();
 

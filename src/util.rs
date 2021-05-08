@@ -24,7 +24,6 @@ pub async fn assets_len(version_path: PathBuf) -> u64 {
             .unwrap();
 
     let assets_json : serde_json::Value = serde_json::from_str(resp.as_str()).unwrap();
-    //let assets_json: serde_json::Value = ureq::get(url).call().unwrap().into_json().unwrap();
 
     let asset_objects = assets_json["objects"].as_object().unwrap();
 

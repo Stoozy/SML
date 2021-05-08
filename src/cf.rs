@@ -66,11 +66,6 @@ impl CFProject {
             .text()
             .await
             .unwrap();
-        //let body: String = ureq::get(format!("{}{}", self.api_url, self.id).as_str())
-         //   .call()
-         //   .unwrap()
-         //   .into_string()
-         //   .unwrap();
         Ok(serde_json::from_str(body.as_str()).unwrap())
     }
 

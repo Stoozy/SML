@@ -22,13 +22,6 @@ pub async fn download_installer(instance_path: PathBuf, mc_forge_version: String
         .await
         .expect("Unable to download file");
 
-    //let mut forge_dloader = Downloader::new();
-    //forge_dloader.set_url(forge_url);
-    //forge_dloader.set_path(forge_path);
-    //forge_dloader
-    //    .download(false)
-    //    .await
-    //    .expect("Error downloading forge");
 }
 
 pub async fn download_headless_installer(instance_path: PathBuf) {
@@ -45,13 +38,6 @@ pub async fn download_headless_installer(instance_path: PathBuf) {
         .await
         .expect("Unable to download file");
 
-    //let mut forge_hl_dloader = Downloader::new();
-    //forge_hl_dloader.set_path(forge_hl_path);
-
-    //forge_hl_dloader
-    //    .download(false)
-    //    .await
-    //    .expect("Error downloading forge headless installer");
 }
 
 pub fn run_forge_installation(instance_path: PathBuf, installer_cp: String) {
