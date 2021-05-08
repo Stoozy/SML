@@ -40,19 +40,40 @@ pub async fn download_headless_installer(instance_path: PathBuf) {
 
 }
 
-pub fn run_forge_installation(instance_path: PathBuf, installer_cp: String) {
-    let args = &[
-        "-cp",
-        installer_cp.as_str(),
-        "me.xfl03.HeadlessInstaller",
-        "-installClient",
-        ".",
-    ];
+pub fn run_forge_installation(
+    instance_path: PathBuf, 
+    installer_cp: String, 
+    cli_supported: bool
+    ) {
 
-    // invoke the headless installer
-    Command::new("java")
-        .args(args)
-        .current_dir(instance_path)
-        .status()
-        .expect("Error occured");
+    if !cli_supported {
+        let args = &[
+            "-cp",
+            installer_cp.as_str(),
+            "me.xfl03.HeadlessInstaller",
+            "-installClient",
+            ".",
+        ];
+        // invoke the headless installer
+        Command::new("java")
+            .args(args)
+            .current_dir(instance_path)
+            .status()
+            .expect("Error occured");
+    }else{
+        // run default installer here
+        
+        let args = &[
+            "-jar",
+            installer_cp.as_str(),
+            "-i",
+        ];
+
+        Command::new("java")
+            .args(args)
+            .current_dir(instance_path)
+            .status()
+            .expect("Error occured");
+    }
+
 }

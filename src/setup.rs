@@ -402,6 +402,50 @@ pub async fn get_binaries(version_path: PathBuf, instance_path: PathBuf) {
     }
 }
 
+
+pub async fn forge_setup_pre13(
+    instance: Instance,
+    manifest_json: serde_json::Value,    
+    user_path: PathBuf
+    ) 
+{
+
+    let modloader = manifest_json["minecraft"]["modLoaders"][0]["id"]
+        .as_str()
+        .unwrap();
+
+    // format is like `forge-${version}`
+    let modloader_split: Vec<&str> = modloader.split('-').collect();
+
+    if modloader_split[0] != "forge" {
+        println!("{}", Red.paint("This is not a forge modpack. Quitting..."));
+        return;
+    }
+
+    let mcv = manifest_json["minecraft"]["version"].as_str().unwrap();
+    let fv = modloader_split[1];
+
+    let mc_forge_version = format!("{}-{}", mcv, fv);
+
+    info!("PRE 1.13.2");
+    let installer_cp = if cfg!(windows) {
+        format!("forge-{}-installer.jar", mc_forge_version)
+    } else {
+        format!("forge-{}-installer.jar", mc_forge_version)
+    };
+
+    forge::run_forge_installation(instance.get_path(), installer_cp, true);
+
+    let mut version_path = instance.get_path();
+    version_path.push(format!("{}.json", mcv));
+
+    let ip = instance.get_path();
+    tokio::spawn(async move {
+        get_binaries(version_path, ip).await;
+    });
+
+}
+
 pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
     let mut proj = CFProject::new(id, "https://api.cfwidget.com/".to_string());
 
@@ -453,6 +497,11 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
     let mcv = manifest_json["minecraft"]["version"].as_str().unwrap();
     let fv = modloader_split[1];
 
+    let is_post_13 = util::is_greater_version("1.13.3", mcv);
+    if !is_post_13 {
+        return forge_setup_pre13(instance, manifest_json, user_path).await;
+    }
+
     let mc_forge_version = format!("{}-{}", mcv, fv);
 
     let mut launcher_profiles_path = instance.get_path();
@@ -461,7 +510,14 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
         .expect("Error writing to launcher profiles");
 
     forge::download_installer(instance.get_path(), mc_forge_version.clone()).await;
-    // forge headless installer
+
+
+
+    // forge headless installer for 1.13.2+
+    info!("POST 1.13.2");
+    // no need for headless installer here as forge
+    // supports -installClient pre 1.13.2
+
     forge::download_headless_installer(instance.get_path()).await;
 
     let installer_cp = if cfg!(windows) {
@@ -475,7 +531,9 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
             mc_forge_version
         )
     };
-    forge::run_forge_installation(instance.get_path(), installer_cp);
+
+    forge::run_forge_installation(instance.get_path(), installer_cp, false);
+
 
     let mut mods_path = instance.get_path();
     mods_path.push("mods");
@@ -495,6 +553,7 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
         mcv, fv, mcv, fv
     ));
 
+
     let mut vanilla_version_path = instance.get_path();
     vanilla_version_path.push(format!("versions/{}/{}.json", mcv, mcv));
 
@@ -505,6 +564,9 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
     tokio::spawn(async move {
         get_binaries(vvpc, ip).await;
     });
+    
+
+    
 
     // get libraries for both vanilla and forge
     let vvpc = vanilla_version_path.clone();
