@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::fs::OpenOptions;
 use std::io::{self, Write};
 use std::path::PathBuf;
+use log::error;
 
 #[derive(Serialize, Deserialize)]
 pub struct User {
@@ -21,7 +22,7 @@ impl From<PathBuf> for User {
     }
 }
 
-pub fn handle_auth() -> Option<User> {
+pub async fn handle_auth() -> Result<User, ()> {
     let mut email: String = "".to_string();
 
     print!("Log in to mojang\nEmail: ");
@@ -33,15 +34,17 @@ pub fn handle_auth() -> Option<User> {
 
     let password: String = rpassword::prompt_password_stdout("Password: ").unwrap();
 
-    let user = authenticate(email.as_str(), password.as_str());
+    let user = authenticate(email.as_str(), password.as_str()).await;
     if user.is_none() {
-        handle_auth()
+        error!("Not a valid user. Try again.");
+        Err(())
     } else {
-        Some(user.unwrap())
+        Ok(user.unwrap())
     }
 }
 
-pub fn authenticate(email: &str, password: &str) -> Option<User> {
+pub async fn authenticate(email: &str, password: &str) -> Option<User> {
+    let request_client : reqwest::Client =  reqwest::Client::new();
     let payload = serde_json::json!(
     {
         "agent" : {
@@ -52,11 +55,20 @@ pub fn authenticate(email: &str, password: &str) -> Option<User> {
         "password" : password
     });
 
-    // send payload here
-    match ureq::post("https://authserver.mojang.com/authenticate").send_json(payload) {
+    let resp = request_client.post(
+            reqwest::Url::parse("https://authserver.mojang.com/authenticate")
+            .unwrap()
+            )
+                .json(&payload)
+                .send()
+                .await;
+
+    //let auth_data : serde_json::Value = serde_json::from_str(resp.text().await.unwrap().as_str()).unwrap();
+    match resp {
         Ok(userinfo) => {
             let userinfo_json: serde_json::Value =
-                userinfo.into_json().expect("Error parsing auth json");
+                serde_json::from_str(userinfo.text().await.unwrap().as_str()).expect("Invalid response data");
+                //userinfo.into_json().expect("Error parsing auth json");
 
             let access_token = userinfo_json["accessToken"].clone();
             let username = userinfo_json["selectedProfile"]["name"].clone();
@@ -68,12 +80,38 @@ pub fn authenticate(email: &str, password: &str) -> Option<User> {
                     .expect("Error parsing json")
                     .to_string(),
             })
-        }
-        Err(ureq::Error::Status(code, _resp)) => {
-            println!("Got status {}", code);
+        },
+        //Err(ureq::Error::Status(code, _resp)) => {
+        //    println!("Got status {}", code);
 
-            handle_auth()
-        }
-        Err(_) => handle_auth(),
+        //    handle_auth()
+        //}
+        Err(_) => None,
     }
+ 
+
+    // send payload here
+    //match ureq::post("https://authserver.mojang.com/authenticate").send_json(payload) {
+    //    Ok(userinfo) => {
+    //        let userinfo_json: serde_json::Value =
+    //            userinfo.into_json().expect("Error parsing auth json");
+
+    //        let access_token = userinfo_json["accessToken"].clone();
+    //        let username = userinfo_json["selectedProfile"]["name"].clone();
+
+    //        Some(User {
+    //            name: username.as_str().expect("Error parsing json").to_string(),
+    //            token: access_token
+    //                .as_str()
+    //                .expect("Error parsing json")
+    //                .to_string(),
+    //        })
+    //    }
+    //    Err(ureq::Error::Status(code, _resp)) => {
+    //        println!("Got status {}", code);
+
+    //        handle_auth()
+    //    }
+    //    Err(_) => handle_auth(),
+    //}
 }

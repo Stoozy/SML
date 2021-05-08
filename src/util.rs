@@ -4,7 +4,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub fn assets_len(version_path: PathBuf) -> u64 {
+pub async fn assets_len(version_path: PathBuf) -> u64 {
     let version_file = File::open(version_path).unwrap();
     let version: serde_json::Value = serde_json::from_reader(version_file).unwrap();
 
@@ -15,7 +15,16 @@ pub fn assets_len(version_path: PathBuf) -> u64 {
         }
     };
 
-    let assets_json: serde_json::Value = ureq::get(url).call().unwrap().into_json().unwrap();
+
+    let resp = reqwest::get(reqwest::Url::parse(url).unwrap())
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+
+    let assets_json : serde_json::Value = serde_json::from_str(resp.as_str()).unwrap();
+    //let assets_json: serde_json::Value = ureq::get(url).call().unwrap().into_json().unwrap();
 
     let asset_objects = assets_json["objects"].as_object().unwrap();
 
@@ -117,11 +126,18 @@ pub fn copy_overrides(instance_path: PathBuf, overrides_path: PathBuf) {
         .expect("Could not copy overrides");
 }
 
-pub fn get_fv_from_mcv(mcv: String) -> String {
+pub async fn get_fv_from_mcv(mcv: String) -> String {
     let versions_url =
         "https://files.minecraftforge.net/maven/net/minecraftforge/forge/promotions_slim.json";
-    let versions_json: serde_json::Value =
-        ureq::get(versions_url).call().unwrap().into_json().unwrap();
+
+    let resp = reqwest::get(reqwest::Url::parse(versions_url).unwrap())
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+
+    let versions_json: serde_json::Value = serde_json::from_str(resp.as_str()).unwrap();
 
     let key = format!("{}-recommended", mcv);
     versions_json["promos"][key]

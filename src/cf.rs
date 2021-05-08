@@ -56,18 +56,26 @@ impl CFProject {
         }
     }
 
-    pub fn get_json(&mut self) -> serde_json::Value {
+    pub async fn get_json(&mut self) -> Result<serde_json::Value,()> {
         // get proper endpoint
-        let body: String = ureq::get(format!("{}{}", self.api_url, self.id).as_str())
-            .call()
+        let url = reqwest::Url::parse(format!("{}{}", self.api_url, self.id).as_str()).unwrap();
+
+        let body : String = reqwest::get(url)
+            .await
             .unwrap()
-            .into_string()
+            .text()
+            .await
             .unwrap();
-        serde_json::from_str(body.as_str()).unwrap()
+        //let body: String = ureq::get(format!("{}{}", self.api_url, self.id).as_str())
+         //   .call()
+         //   .unwrap()
+         //   .into_string()
+         //   .unwrap();
+        Ok(serde_json::from_str(body.as_str()).unwrap())
     }
 
-    pub fn get_choice(&mut self) -> usize {
-        let res: Value = self.get_json();
+    pub async fn get_choice(&mut self) -> Result<usize, ()> {
+        let res: Value = self.get_json().await.unwrap();
 
         let files: &Vec<Value> = res["files"]
             .as_array()
@@ -102,6 +110,6 @@ impl CFProject {
             None => 0,
         };
 
-        choice as usize
+        Ok(choice as usize)
     }
 }

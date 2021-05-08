@@ -182,7 +182,7 @@ async fn main() {
 
     // authentication
     if app.is_present("authenticate") {
-        let user = auth::handle_auth().expect("Failed authentication");
+        let user = auth::handle_auth().await.expect("Failed authentication");
 
         println!("{}", Green.paint("Authentication successful!"));
         std::io::stdout().flush().unwrap();

@@ -15,7 +15,6 @@ futures = "0.3.14"
 tokio = { version = "0.2", features = ["full"] }
 serde_json = "1.0"
 hyper = "0.13.8"
-ureq = { version="2.0.2", features =["json"] }
 ftp = "3.0.1"
 zip = "0.5"
 indicatif = "0.15.0"
@@ -24,7 +23,7 @@ rpassword = "5.0"
 subprocess = "0.2.6"
 ansi_term = "0.12"
 rust-crypto = "^0.2"
-reqwest = { version="0.10", features=["blocking"]}
+reqwest = { version="0.10", features=["blocking","json"]}
 fs_extra = "1.2.0"
 env_logger = "0.6.1"
 log = "0.4.14"

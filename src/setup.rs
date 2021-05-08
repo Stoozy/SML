@@ -183,6 +183,8 @@ pub async fn get_asset_downloads(
 ) -> Option<HashMap<PathBuf, String>> {
     let mut asset_downloads: HashMap<PathBuf, String> = HashMap::new();
 
+    let request_client = reqwest::Client::new();
+
     let version_file = File::open(version_path).unwrap();
     let version: serde_json::Value = serde_json::from_reader(version_file).unwrap();
 
@@ -199,7 +201,22 @@ pub async fn get_asset_downloads(
 
     asset_downloads.insert(index_save_path, url.to_string());
 
-    let assets_json: serde_json::Value = ureq::get(url).call().unwrap().into_json().unwrap();
+    let resp = request_client.get(
+            reqwest::Url::parse(url).unwrap()
+        ).send().await.unwrap();
+    let assets_json : serde_json::Value = serde_json::from_str(resp.text().await.unwrap().as_str()).unwrap();
+
+
+    //let assets_json : serde_json::Value = serde_json::from_str(
+    //    reqwest::get(url)
+    //        .await
+    //        .unwrap()
+    //        .text()
+    //        .await
+    //        .unwrap()
+    //        .as_str()
+    //    ).unwrap();
+    //let assets_json: serde_json::Value = ureq::get(url).call().unwrap().into_json().unwrap();
 
     let asset_objects = assets_json["objects"].as_object().unwrap();
 
@@ -228,6 +245,10 @@ pub async fn get_mod_downloads(
     mc_version: String,
     mods_path: PathBuf,
 ) -> Option<HashMap<PathBuf, String>> {
+
+    // create a reqwest client
+    let request_client = reqwest::Client::new();
+
     let mut downloads_map: HashMap<PathBuf, String> = HashMap::new();
 
     let mut mods_manifest_path = mods_path.clone();
@@ -243,12 +264,18 @@ pub async fn get_mod_downloads(
         let proj_id = m["projectID"].as_u64().unwrap();
         let file_id = m["fileID"].as_u64().unwrap();
 
-        let mod_json: serde_json::Value =
-            ureq::get(format!("https://api.cfwidget.com/{}", proj_id).as_str())
-                .call()
-                .unwrap()
-                .into_json()
-                .unwrap();
+        //let mod_json: serde_json::Value =
+            
+        let resp = request_client.get(
+            reqwest::Url::parse(format!("https://api.cfwidget.com/{}", proj_id).as_str()).unwrap()
+        ).send().await.unwrap();
+        let mod_json : serde_json::Value = serde_json::from_str(resp.text().await.unwrap().as_str()).unwrap();
+
+            //ureq::get(format!("https://api.cfwidget.com/{}", proj_id).as_str())
+            //    .call()
+            //    .unwrap()
+            //    .into_json()
+            //    .unwrap();
 
         let for_versions = mod_json["versions"].as_array();
 
@@ -395,7 +422,7 @@ pub async fn get_binaries(version_path: PathBuf, instance_path: PathBuf) {
 pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
     let mut proj = CFProject::new(id, "https://api.cfwidget.com/".to_string());
 
-    let choice = proj.get_choice();
+    let choice = proj.get_choice().await.unwrap();
 
     let name = proj
         .files
