@@ -11,7 +11,7 @@ use crate::{
 use ansi_term::Color::*;
 //use serde_json::*;
 
-use log::info;
+use log::{info, warn};
 use crate::auth::User;
 
 use std::{
@@ -295,7 +295,7 @@ pub async fn get_mod_downloads(
             let modfiles = match mod_json["files"].as_array() {
                 Some(val) => val,
                 None => {
-                    println!("Could not parse files list");
+                    warn!("Could not parse files list");
                     continue;
                 }
             };
@@ -403,48 +403,93 @@ pub async fn get_binaries(version_path: PathBuf, instance_path: PathBuf) {
 }
 
 
-pub async fn forge_setup_pre13(
-    instance: Instance,
-    manifest_json: serde_json::Value,    
-    user_path: PathBuf
-    ) 
-{
-
-    let modloader = manifest_json["minecraft"]["modLoaders"][0]["id"]
-        .as_str()
-        .unwrap();
-
-    // format is like `forge-${version}`
-    let modloader_split: Vec<&str> = modloader.split('-').collect();
-
-    if modloader_split[0] != "forge" {
-        println!("{}", Red.paint("This is not a forge modpack. Quitting..."));
-        return;
-    }
-
-    let mcv = manifest_json["minecraft"]["version"].as_str().unwrap();
-    let fv = modloader_split[1];
-
-    let mc_forge_version = format!("{}-{}", mcv, fv);
-
-    info!("PRE 1.13.2");
-    let installer_cp = if cfg!(windows) {
-        format!("forge-{}-installer.jar", mc_forge_version)
-    } else {
-        format!("forge-{}-installer.jar", mc_forge_version)
-    };
-
-    forge::run_forge_installation(instance.get_path(), installer_cp, true);
-
-    let mut version_path = instance.get_path();
-    version_path.push(format!("{}.json", mcv));
-
-    let ip = instance.get_path();
-    tokio::spawn(async move {
-        get_binaries(version_path, ip).await;
-    });
-
-}
+//pub async fn forge_setup_pre13(
+//    instance: Instance,
+//    manifest_json: serde_json::Value,    
+//    user_path: PathBuf
+//    ) 
+//{
+//
+//    let mut mods_path = instance.get_path();
+//    mods_path.push("mods");
+//
+//    let mut libpath = instance.get_path();
+//    libpath.push("libraries");
+//
+//    let mut binpath = instance.get_path();
+//    binpath.push("bin");
+//
+//    let mut assetspath = instance.get_path();
+//    assetspath.push("assets");
+//
+//
+//    let modloader = manifest_json["minecraft"]["modLoaders"][0]["id"]
+//        .as_str()
+//        .unwrap();
+//
+//    // format is like `forge-${version}`
+//    let modloader_split: Vec<&str> = modloader.split('-').collect();
+//
+//    if modloader_split[0] != "forge" {
+//        println!("{}", Red.paint("This is not a forge modpack. Quitting..."));
+//        return;
+//    }
+//
+//    let mcv = manifest_json["minecraft"]["version"].as_str().unwrap();
+//    let fv = modloader_split[1];
+//
+//    let mc_forge_version = format!("{}-{}", mcv, fv);
+//
+//    info!("PRE 1.13.2");
+//    let installer_cp = if cfg!(windows) {
+//        format!("forge-{}-installer.jar", mc_forge_version)
+//    } else {
+//        format!("forge-{}-installer.jar", mc_forge_version)
+//    };
+//
+//    forge::run_forge_installation(instance.get_path(), installer_cp, true);
+//
+//    let mut forge_version_path = instance.get_path();
+//    forge_version_path.push(format!(
+//        "versions/{}-forge-{}/{}-forge-{}.json",
+//        mcv, fv, mcv, fv
+//    ));
+//
+//
+//    let mut vanilla_version_path = instance.get_path();
+//    vanilla_version_path.push(format!("versions/{}/{}.json", mcv, mcv));
+//
+//    let version_paths = vec![vanilla_version_path.clone(), forge_version_path.clone()];
+//
+//    let vvpc = vanilla_version_path.clone();
+//    let ip = instance.get_path();
+//    tokio::spawn(async move {
+//        get_binaries(vvpc, ip).await;
+//    });
+//
+//    // get libraries for both vanilla and forge
+//    let vvpc = vanilla_version_path.clone();
+//    let fvpc = forge_version_path.clone();
+//
+//    // get a list of all downloads
+//    let mut downloads = get_library_downloads(libpath.clone(), vvpc).await.unwrap();
+//    downloads.extend(get_library_downloads(libpath.clone(), fvpc).await.unwrap());
+//
+//    let mpc = mods_path.clone();
+//    let mcvc = mcv.to_owned();
+//    downloads.extend(get_mod_downloads(mcvc, mpc).await.unwrap());
+//    downloads.extend(
+//        get_asset_downloads(instance.get_path(), vanilla_version_path)
+//            .await
+//            .unwrap()
+//    );
+//
+//    Downloader::new(downloads)
+//        .process()
+//        .await
+//        .expect("Unable to finish download");
+//
+//}
 
 pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
     let mut proj = CFProject::new(id, "https://api.cfwidget.com/".to_string());
@@ -497,11 +542,6 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
     let mcv = manifest_json["minecraft"]["version"].as_str().unwrap();
     let fv = modloader_split[1];
 
-    let is_post_13 = util::is_greater_version("1.13.3", mcv);
-    if !is_post_13 {
-        return forge_setup_pre13(instance, manifest_json, user_path).await;
-    }
-
     let mc_forge_version = format!("{}-{}", mcv, fv);
 
     let mut launcher_profiles_path = instance.get_path();
@@ -511,29 +551,29 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
 
     forge::download_installer(instance.get_path(), mc_forge_version.clone()).await;
 
-
-
     // forge headless installer for 1.13.2+
-    info!("POST 1.13.2");
     // no need for headless installer here as forge
     // supports -installClient pre 1.13.2
+    let is_pre_13 = !util::is_greater_version(mcv, "1.13.2");
 
-    forge::download_headless_installer(instance.get_path()).await;
+    if is_pre_13 {
+        let installer_cp = match cfg!(windows) {
+            true => format!("forge-{}-installer.jar",mc_forge_version),
+            false => format!("forge-{}-installer.jar",mc_forge_version)
+        };
 
-    let installer_cp = if cfg!(windows) {
-        format!(
-            "forge-{}-installer.jar;forge-installer-headless-1.0.1.jar",
-            mc_forge_version
-        )
-    } else {
-        format!(
-            "forge-{}-installer.jar:forge-installer-headless-1.0.1.jar",
-            mc_forge_version
-        )
-    };
+        forge::run_forge_installation(instance.get_path(), installer_cp, false);
+    }else{
 
-    forge::run_forge_installation(instance.get_path(), installer_cp, false);
+        info!("POST 1.13.2");
+        forge::download_headless_installer(instance.get_path()).await;
+        let installer_cp = match cfg!(windows) {
+            true => format!("forge-{}-installer.jar;forge-installer-headless-1.0.1.jar",mc_forge_version),
+            false =>  format!("forge-{}-installer.jar:forge-installer-headless-1.0.1.jar",mc_forge_version)
+        };
 
+        forge::run_forge_installation(instance.get_path(), installer_cp, true);
+    }
 
     let mut mods_path = instance.get_path();
     mods_path.push("mods");
@@ -553,7 +593,6 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
         mcv, fv, mcv, fv
     ));
 
-
     let mut vanilla_version_path = instance.get_path();
     vanilla_version_path.push(format!("versions/{}/{}.json", mcv, mcv));
 
@@ -565,9 +604,7 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
         get_binaries(vvpc, ip).await;
     });
     
-
     
-
     // get libraries for both vanilla and forge
     let vvpc = vanilla_version_path.clone();
     let fvpc = forge_version_path.clone();
@@ -589,12 +626,6 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
         .process()
         .await
         .expect("Unable to finish download");
-
-    //dbg!(downloads);
-    //let ipc = instance.get_path();
-    //tokio::spawn(async move {
-    //get_assets(ipc, vanilla_version_path).await.unwrap();
-    //});
 
     let mut overrides_path = mods_path;
     overrides_path.push("overrides");
@@ -627,7 +658,7 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
         .as_str()
         .expect("Couldn't get main class");
 
-    let forge_args = util::get_forge_args(forge_json.clone());
+    let forge_args = util::get_forge_args(forge_json.clone(), is_pre_13);
 
     let classes = get_cp_from_version(PathBuf::from("libraries"), version_paths);
     let mut classpaths: Vec<PathBuf> = Vec::new();
