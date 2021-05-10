@@ -8,6 +8,7 @@ use log::error;
 pub struct User {
     pub name: String,
     pub token: String,
+    pub id: String,
 }
 
 impl From<PathBuf> for User {
@@ -72,6 +73,7 @@ pub async fn authenticate(email: &str, password: &str) -> Option<User> {
 
             let access_token = userinfo_json["accessToken"].clone();
             let username = userinfo_json["selectedProfile"]["name"].clone();
+            let uuid = userinfo_json["selectedProfile"]["id"].clone();
 
             Some(User {
                 name: username.as_str().expect("Error parsing json").to_string(),
@@ -79,6 +81,8 @@ pub async fn authenticate(email: &str, password: &str) -> Option<User> {
                     .as_str()
                     .expect("Error parsing json")
                     .to_string(),
+
+                id: uuid.as_str().expect("Error getting uuid").to_string()
             })
         },
         //Err(ureq::Error::Status(code, _resp)) => {

@@ -103,14 +103,15 @@ pub fn is_greater_version(version1: &str, version2: &str) -> bool {
     for i in v1_c {
         v1 =  v1 * 10 +  match i.parse::<i32>(){
             Ok(val) => val,
-            Err(_) => panic!(" v1:{}, v2:{} ",v1,v2)
+            Err(_) => 0 
         };
     }
 
     for i in v2_c {
         v2 = v2 * 10 + match i.parse::<i32>(){
             Ok(val) => val,
-            Err(_) => panic!(" v1:{}, v2:{} ",v1,v2)
+            Err(_) =>  0
+                //panic!(" v1:{}, v2:{} ",v1,v2)
         };
     }
 

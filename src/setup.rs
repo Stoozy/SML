@@ -584,8 +584,8 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
     let mut binpath = instance.get_path();
     binpath.push("bin");
 
-    let mut assetspath = instance.get_path();
-    assetspath.push("assets");
+    let mut assets_path = instance.get_path();
+    assets_path.push("assets");
 
     let mut forge_version_path = instance.get_path();
     forge_version_path.push(format!(
@@ -667,19 +667,56 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
         classpaths.push(class.1);
     }
 
-    let mut invoker = Invoker::new(
+    if is_pre_13 {
+        // Game args look like this
+        //"minecraftArguments": "--username ${auth_player_name} --version ${version_name} --gameDir ${game_directory} --assetsDir ${assets_root} --assetIndex ${assets_index_name} --uuid ${auth_uuid} --accessToken ${auth_access_token} --userType ${user_type} --tweakClass net.minecraftforge.fml.common.launcher.FMLTweaker --versionType Forge", 
+
+        let mut args = forge_json["minecraftArguments"].as_str().unwrap().to_string();
+
+        // build game args 
+        args = args.replace("${auth_player_name}", user.name.as_str());
+        args = args.replace("${version_name}", proj.files[choice].version.as_str());
+        args = args.replace("${game_directory}", instance.get_path().to_str().unwrap());
+        args = args.replace("${assets_root}", assets_path.to_str().unwrap());
+        args = args.replace("${assets_index_name}", asset_index);
+        args = args.replace("${auth_uuid}", user.id.as_str());
+        args = args.replace("${auth_access_token}", user.token.as_str());
+        args = args.replace("${user_type}", "mojang");
+
+        let mut invoker = Invoker::new(
+                "java".to_string(),
+                binpath.clone(),
+                classpaths.clone(),
+                args,
+                main_class.to_string()
+            );
+
+        let mut invoker_file_path = instance.get_path();
+        invoker_file_path.push("sml_invoker.json");
+
+        invoker.gen_invocation();
+        invoker.export_as_json(invoker_file_path);
+
+    }else{
+
+        // POST 1.13.2
+
+        let mut invoker = Invoker::new(
                 "java ".to_string(),
                 binpath,
                 classpaths,
-        format!("{} --assetsDir {} --assetIndex {} --gameDir {} --version  {} --username {} --accessToken {} --versionType release --userType mojang",
-				forge_args.unwrap(), assetspath.display(), asset_index, instance.get_path().display(), proj.files[choice].version, user.name, user.token),
+                format!("{} --assetsDir {} --assetIndex {} --gameDir {} --version  {} --username {} --accessToken {} --versionType release --userType mojang",
+				forge_args.unwrap(), assets_path.display(), asset_index, instance.get_path().display(), proj.files[choice].version, user.name, user.token),
                 main_class.to_string()
                 );
 
-    let mut invoker_file_path = instance.get_path();
-    invoker_file_path.push("sml_invoker.json");
+        let mut invoker_file_path = instance.get_path();
+        invoker_file_path.push("sml_invoker.json");
 
-    invoker.gen_invocation();
-    invoker.export_as_json(invoker_file_path);
+        invoker.gen_invocation();
+        invoker.export_as_json(invoker_file_path);
+
+    }
+
     info!("{}", Green.paint("Setup is complete!"));
 }
