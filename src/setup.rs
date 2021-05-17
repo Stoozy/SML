@@ -65,6 +65,16 @@ pub fn get_cp_from_version(
     let mut retvec = Vec::new();
 
     for version_fpath in version_paths {
+
+        // add version jar to path
+
+        let mut version_jarpath = version_fpath.clone();
+        version_jarpath.set_extension("jar");
+
+        if version_jarpath.exists() {
+            retvec.push(("version_jar".to_string(), version_jarpath));
+        }
+
         let file = File::open(version_fpath).unwrap();
         let reader = BufReader::new(file);
 
@@ -85,31 +95,45 @@ pub fn get_cp_from_version(
             path.push(match lib["downloads"]["artifact"]["path"].as_str() {
                 Some(val) => val,
                 None => {
-                    println!("Couldn't get library path, skipping");
+                    dbg!(lib);
+                    println!("Couldn't get library path for {}, skipping", lib["downloads"]["artifact"]["name"]);
                     ""
                 }
             });
 
             // this excludes forge or any other invalid lib for the check
+            // since they don't have urls
             if lib["downloads"]["artifact"]["url"].as_str().is_none() {
                 retvec.push((full_name, path));
             } else {
-                let mut found_version = "";
+
+                let mut found_version = Some(String::new());
                 let found_index = retvec.iter().position(|v| {
                     let a = &v.0;
                     let n: Vec<&str> = a.split(":").collect();
-                    found_version = n[2];
-                    name == n[1]
+
+                    if n.len() >= 3 {
+                        found_version = Some(n[2].to_string());
+                        name == n[1]
+                    }else{
+                        false
+                    }
+
                 });
 
                 // make some checks for duplicate library
-                if !found_index.is_none() {
-                    if util::is_greater_version(version, found_version) {
-                        // prev version is old
-                        // remove it and put new one
-                        retvec.remove(found_index.unwrap());
-                        retvec.push((full_name, path));
+                if found_index.is_some() {
+                    match found_version {
+                        Some(other_version) => {
+                            if util::geq_version(version, other_version.as_str()) {
+                                // remove old version and keep new one
+                                retvec.remove(found_index.unwrap());
+                                retvec.push((full_name, path));
+                            }
+                        },
+                        None => ()
                     }
+                    
                     // if prev entry has greater version,
                     // then don't push anything
                 } else {
@@ -127,6 +151,7 @@ pub async fn get_library_downloads(
     libpath: PathBuf,
     manifest: PathBuf,
 ) -> Option<HashMap<PathBuf, String>> {
+
     let mut lib_downloads: HashMap<PathBuf, String> = HashMap::new();
 
     let file = OpenOptions::new()
@@ -160,14 +185,6 @@ pub async fn get_library_downloads(
             }
         };
 
-        //let artifact_sha1 = match lib["downloads"]["artifact"]["sha1"].as_str() {
-        //    Some(hash) => hash,
-        //    None => {
-        //        println!("No hash found , skipping ...");
-        //        break;
-        //    }
-        //};
-
         // only download if url is valid
         if !download_url.is_empty() {
             lib_downloads.insert(path, download_url.to_string());
@@ -181,6 +198,7 @@ pub async fn get_asset_downloads(
     game_path: PathBuf,
     version_path: PathBuf,
 ) -> Option<HashMap<PathBuf, String>> {
+
     let mut asset_downloads: HashMap<PathBuf, String> = HashMap::new();
 
     let request_client = reqwest::Client::new();
@@ -295,6 +313,7 @@ pub async fn get_mod_downloads(
             let modfiles = match mod_json["files"].as_array() {
                 Some(val) => val,
                 None => {
+                    dbg!(mod_json);
                     warn!("Could not parse files list");
                     continue;
                 }
@@ -403,94 +422,6 @@ pub async fn get_binaries(version_path: PathBuf, instance_path: PathBuf) {
 }
 
 
-//pub async fn forge_setup_pre13(
-//    instance: Instance,
-//    manifest_json: serde_json::Value,    
-//    user_path: PathBuf
-//    ) 
-//{
-//
-//    let mut mods_path = instance.get_path();
-//    mods_path.push("mods");
-//
-//    let mut libpath = instance.get_path();
-//    libpath.push("libraries");
-//
-//    let mut binpath = instance.get_path();
-//    binpath.push("bin");
-//
-//    let mut assetspath = instance.get_path();
-//    assetspath.push("assets");
-//
-//
-//    let modloader = manifest_json["minecraft"]["modLoaders"][0]["id"]
-//        .as_str()
-//        .unwrap();
-//
-//    // format is like `forge-${version}`
-//    let modloader_split: Vec<&str> = modloader.split('-').collect();
-//
-//    if modloader_split[0] != "forge" {
-//        println!("{}", Red.paint("This is not a forge modpack. Quitting..."));
-//        return;
-//    }
-//
-//    let mcv = manifest_json["minecraft"]["version"].as_str().unwrap();
-//    let fv = modloader_split[1];
-//
-//    let mc_forge_version = format!("{}-{}", mcv, fv);
-//
-//    info!("PRE 1.13.2");
-//    let installer_cp = if cfg!(windows) {
-//        format!("forge-{}-installer.jar", mc_forge_version)
-//    } else {
-//        format!("forge-{}-installer.jar", mc_forge_version)
-//    };
-//
-//    forge::run_forge_installation(instance.get_path(), installer_cp, true);
-//
-//    let mut forge_version_path = instance.get_path();
-//    forge_version_path.push(format!(
-//        "versions/{}-forge-{}/{}-forge-{}.json",
-//        mcv, fv, mcv, fv
-//    ));
-//
-//
-//    let mut vanilla_version_path = instance.get_path();
-//    vanilla_version_path.push(format!("versions/{}/{}.json", mcv, mcv));
-//
-//    let version_paths = vec![vanilla_version_path.clone(), forge_version_path.clone()];
-//
-//    let vvpc = vanilla_version_path.clone();
-//    let ip = instance.get_path();
-//    tokio::spawn(async move {
-//        get_binaries(vvpc, ip).await;
-//    });
-//
-//    // get libraries for both vanilla and forge
-//    let vvpc = vanilla_version_path.clone();
-//    let fvpc = forge_version_path.clone();
-//
-//    // get a list of all downloads
-//    let mut downloads = get_library_downloads(libpath.clone(), vvpc).await.unwrap();
-//    downloads.extend(get_library_downloads(libpath.clone(), fvpc).await.unwrap());
-//
-//    let mpc = mods_path.clone();
-//    let mcvc = mcv.to_owned();
-//    downloads.extend(get_mod_downloads(mcvc, mpc).await.unwrap());
-//    downloads.extend(
-//        get_asset_downloads(instance.get_path(), vanilla_version_path)
-//            .await
-//            .unwrap()
-//    );
-//
-//    Downloader::new(downloads)
-//        .process()
-//        .await
-//        .expect("Unable to finish download");
-//
-//}
-
 pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
     let mut proj = CFProject::new(id, "https://api.cfwidget.com/".to_string());
 
@@ -554,7 +485,7 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
     // forge headless installer for 1.13.2+
     // no need for headless installer here as forge
     // supports -installClient pre 1.13.2
-    let is_pre_13 = !util::is_greater_version(mcv, "1.13.2");
+    let is_pre_13 = !util::geq_version(mcv, "1.13.2");
 
     if is_pre_13 {
         let installer_cp = match cfg!(windows) {

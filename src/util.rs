@@ -90,7 +90,7 @@ pub fn get_u64() -> Option<u64> {
     )
 }
 
-pub fn is_greater_version(version1: &str, version2: &str) -> bool {
+pub fn geq_version(version1: &str, version2: &str) -> bool {
     // serialize version as int and check if greater
     let v1_c: Vec<&str> = version1.split(".").collect();
     let v2_c: Vec<&str> = version2.split(".").collect();
@@ -115,7 +115,7 @@ pub fn is_greater_version(version1: &str, version2: &str) -> bool {
         };
     }
 
-    v1 > v2
+    v1 >= v2
 }
 
 pub fn get_forge_args(json: serde_json::Value, is_pre_13 : bool) -> Option<String> {
