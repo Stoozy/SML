@@ -1,6 +1,7 @@
 use crate::downloader::Downloader;
 use std::path::PathBuf;
 use std::process::Command;
+use ansi_term::Color::Yellow;
 
 use std::collections::HashMap;
 pub async fn download_installer(instance_path: PathBuf, mc_forge_version: String) {
@@ -40,19 +41,41 @@ pub async fn download_headless_installer(instance_path: PathBuf) {
 
 }
 
-pub fn run_forge_installation(instance_path: PathBuf, installer_cp: String) {
-    let args = &[
-        "-cp",
-        installer_cp.as_str(),
-        "me.xfl03.HeadlessInstaller",
-        "-installClient",
-        ".",
-    ];
+pub fn run_forge_installation(
+    instance_path: PathBuf, 
+    installer_cp: String, 
+    post_13 : bool
+    ) {
 
-    // invoke the headless installer
-    Command::new("java")
-        .args(args)
-        .current_dir(instance_path)
-        .status()
-        .expect("Error occured");
+    if post_13 {
+        let args = &[
+            "-cp",
+            installer_cp.as_str(),
+            "me.xfl03.HeadlessInstaller",
+            "-installClient",
+            ".",
+        ];
+        // invoke the headless installer
+        Command::new("java")
+            .args(args)
+            .current_dir(instance_path)
+            .status()
+            .expect("Error occured");
+    }else{
+
+        println!("\n\n");
+        println!("When prompted by forge, {}: {}", Yellow.paint("ENTER THE FOLLOWING"), instance_path.clone().display());
+        // run default installer here
+        let args = &[
+            "-jar",
+            installer_cp.as_str(),
+        ];
+
+        Command::new("java")
+            .args(args)
+            .current_dir(instance_path)
+            .status()
+            .expect("Error occured");
+    }
+
 }

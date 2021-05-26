@@ -74,7 +74,7 @@ impl Invoker {
         };
 
         let serialized_invoker_data = json!({
-            "java":"java",
+            "java":"/home/stoozy/.minecraft/runtime/jre-legacy/linux/jre-legacy/bin/java",
             "binpath" : binpath_arg,
             "custom_args": custom_args,
             "classpaths" : self.classpaths,

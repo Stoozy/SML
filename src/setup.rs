@@ -11,14 +11,14 @@ use crate::{
 use ansi_term::Color::*;
 //use serde_json::*;
 
-use log::info;
+use log::{info, warn};
 use crate::auth::User;
 
 use std::{
     collections::HashMap,
     fs,
     fs::{File, OpenOptions},
-    io::BufReader,
+    io::{Write,BufReader},
     path::PathBuf,
 };
 
@@ -65,6 +65,16 @@ pub fn get_cp_from_version(
     let mut retvec = Vec::new();
 
     for version_fpath in version_paths {
+
+        // add version jar to path
+
+        let mut version_jarpath = version_fpath.clone();
+        version_jarpath.set_extension("jar");
+
+        if version_jarpath.exists() {
+            retvec.push(("version_jar".to_string(), version_jarpath));
+        }
+
         let file = File::open(version_fpath).unwrap();
         let reader = BufReader::new(file);
 
@@ -85,31 +95,44 @@ pub fn get_cp_from_version(
             path.push(match lib["downloads"]["artifact"]["path"].as_str() {
                 Some(val) => val,
                 None => {
-                    println!("Couldn't get library path, skipping");
+                    println!("Couldn't get library path for {}, skipping", lib["downloads"]["artifact"]["name"]);
                     ""
                 }
             });
 
             // this excludes forge or any other invalid lib for the check
+            // since they don't have urls
             if lib["downloads"]["artifact"]["url"].as_str().is_none() {
                 retvec.push((full_name, path));
             } else {
-                let mut found_version = "";
+
+                let mut found_version = Some(String::new());
                 let found_index = retvec.iter().position(|v| {
                     let a = &v.0;
                     let n: Vec<&str> = a.split(":").collect();
-                    found_version = n[2];
-                    name == n[1]
+
+                    if n.len() >= 3 {
+                        found_version = Some(n[2].to_string());
+                        name == n[1]
+                    }else{
+                        false
+                    }
+
                 });
 
                 // make some checks for duplicate library
-                if !found_index.is_none() {
-                    if util::is_greater_version(version, found_version) {
-                        // prev version is old
-                        // remove it and put new one
-                        retvec.remove(found_index.unwrap());
-                        retvec.push((full_name, path));
+                if found_index.is_some() {
+                    match found_version {
+                        Some(other_version) => {
+                            if util::geq_version(version, other_version.as_str()) {
+                                // remove old version and keep new one
+                                retvec.remove(found_index.unwrap());
+                                retvec.push((full_name, path));
+                            }
+                        },
+                        None => ()
                     }
+                    
                     // if prev entry has greater version,
                     // then don't push anything
                 } else {
@@ -127,6 +150,7 @@ pub async fn get_library_downloads(
     libpath: PathBuf,
     manifest: PathBuf,
 ) -> Option<HashMap<PathBuf, String>> {
+
     let mut lib_downloads: HashMap<PathBuf, String> = HashMap::new();
 
     let file = OpenOptions::new()
@@ -142,9 +166,12 @@ pub async fn get_library_downloads(
 
     for (_i, lib) in libraries.iter().enumerate() {
         let artifact_path = match lib["downloads"]["artifact"]["path"].as_str() {
-            Some(val) => val,
+            Some(val) =>  {
+                val
+            },
             None => {
-                // skipping empty paths
+                // skipping on empty path
+                eprintln!("EMPTY PATH Skipping {}", lib["name"].as_str()?);
                 break;
             }
         };
@@ -156,21 +183,19 @@ pub async fn get_library_downloads(
             Some(val) => val,
             None => {
                 // skipping on empty url
+                eprintln!("EMPTY URL Skipping {}", lib["name"].as_str()?);
+
                 break;
             }
         };
 
-        //let artifact_sha1 = match lib["downloads"]["artifact"]["sha1"].as_str() {
-        //    Some(hash) => hash,
-        //    None => {
-        //        println!("No hash found , skipping ...");
-        //        break;
-        //    }
-        //};
-
-        // only download if url is valid
+        // only download if url is valid and
+        // the downloads hashmap doesn't contain
+        // the key ( avoid dupes )
         if !download_url.is_empty() {
             lib_downloads.insert(path, download_url.to_string());
+        }else{
+            eprintln!("Download url is empty {}", lib["name"].as_str()?);
         }
     }
 
@@ -181,6 +206,7 @@ pub async fn get_asset_downloads(
     game_path: PathBuf,
     version_path: PathBuf,
 ) -> Option<HashMap<PathBuf, String>> {
+
     let mut asset_downloads: HashMap<PathBuf, String> = HashMap::new();
 
     let request_client = reqwest::Client::new();
@@ -295,7 +321,8 @@ pub async fn get_mod_downloads(
             let modfiles = match mod_json["files"].as_array() {
                 Some(val) => val,
                 None => {
-                    println!("Could not parse files list");
+                    dbg!(mod_json);
+                    warn!("Could not parse files list");
                     continue;
                 }
             };
@@ -402,6 +429,7 @@ pub async fn get_binaries(version_path: PathBuf, instance_path: PathBuf) {
     }
 }
 
+
 pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
     let mut proj = CFProject::new(id, "https://api.cfwidget.com/".to_string());
 
@@ -461,21 +489,30 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
         .expect("Error writing to launcher profiles");
 
     forge::download_installer(instance.get_path(), mc_forge_version.clone()).await;
-    // forge headless installer
-    forge::download_headless_installer(instance.get_path()).await;
 
-    let installer_cp = if cfg!(windows) {
-        format!(
-            "forge-{}-installer.jar;forge-installer-headless-1.0.1.jar",
-            mc_forge_version
-        )
-    } else {
-        format!(
-            "forge-{}-installer.jar:forge-installer-headless-1.0.1.jar",
-            mc_forge_version
-        )
-    };
-    forge::run_forge_installation(instance.get_path(), installer_cp);
+    // forge headless installer for 1.13.2+
+    // no need for headless installer here as forge
+    // supports -installClient pre 1.13.2
+    let is_pre_13 = !util::geq_version(mcv, "1.13.2");
+
+    if is_pre_13 {
+        let installer_cp = match cfg!(windows) {
+            true => format!("forge-{}-installer.jar",mc_forge_version),
+            false => format!("forge-{}-installer.jar",mc_forge_version)
+        };
+
+        forge::run_forge_installation(instance.get_path(), installer_cp, false);
+    }else{
+
+        info!("POST 1.13.2");
+        forge::download_headless_installer(instance.get_path()).await;
+        let installer_cp = match cfg!(windows) {
+            true => format!("forge-{}-installer.jar;forge-installer-headless-1.0.1.jar",mc_forge_version),
+            false =>  format!("forge-{}-installer.jar:forge-installer-headless-1.0.1.jar",mc_forge_version)
+        };
+
+        forge::run_forge_installation(instance.get_path(), installer_cp, true);
+    }
 
     let mut mods_path = instance.get_path();
     mods_path.push("mods");
@@ -486,8 +523,8 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
     let mut binpath = instance.get_path();
     binpath.push("bin");
 
-    let mut assetspath = instance.get_path();
-    assetspath.push("assets");
+    let mut assets_path = instance.get_path();
+    assets_path.push("assets");
 
     let mut forge_version_path = instance.get_path();
     forge_version_path.push(format!(
@@ -505,7 +542,8 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
     tokio::spawn(async move {
         get_binaries(vvpc, ip).await;
     });
-
+    
+    
     // get libraries for both vanilla and forge
     let vvpc = vanilla_version_path.clone();
     let fvpc = forge_version_path.clone();
@@ -523,16 +561,22 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
             .unwrap()
     );
 
+    let mut downloads_log_file_path = instance.get_path();
+    downloads_log_file_path.push("downloads.log");
+
+    let mut downloads_log_file = File::create(downloads_log_file_path).expect("Couldn't create file");
+
+    for (k,v) in downloads.clone().into_iter() {
+        let line = format!("{},{}\n", k.display(),v);
+        downloads_log_file.write(line.as_bytes()).expect("Error writing to file");
+    }
+
+
+
     Downloader::new(downloads)
         .process()
         .await
         .expect("Unable to finish download");
-
-    //dbg!(downloads);
-    //let ipc = instance.get_path();
-    //tokio::spawn(async move {
-    //get_assets(ipc, vanilla_version_path).await.unwrap();
-    //});
 
     let mut overrides_path = mods_path;
     overrides_path.push("overrides");
@@ -565,7 +609,7 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
         .as_str()
         .expect("Couldn't get main class");
 
-    let forge_args = util::get_forge_args(forge_json.clone());
+    let forge_args = util::get_forge_args(forge_json.clone(), is_pre_13);
 
     let classes = get_cp_from_version(PathBuf::from("libraries"), version_paths);
     let mut classpaths: Vec<PathBuf> = Vec::new();
@@ -574,19 +618,74 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
         classpaths.push(class.1);
     }
 
-    let mut invoker = Invoker::new(
+    if is_pre_13 {
+        // Game args look like this
+        //"minecraftArguments": "--username ${auth_player_name} --version ${version_name} --gameDir ${game_directory} --assetsDir ${assets_root} --assetIndex ${assets_index_name} --uuid ${auth_uuid} --accessToken ${auth_access_token} --userType ${user_type} --tweakClass net.minecraftforge.fml.common.launcher.FMLTweaker --versionType Forge", 
+
+        let mut args = forge_json["minecraftArguments"].as_str().unwrap().to_string();
+
+        // download text2speech narrator 1.10.2
+       
+        // THIS IS VERY HACKY
+        // but a fix for now...
+        //
+        let mut download_map = HashMap::new();
+        let mut narrator_path = instance.get_path();
+        narrator_path.push("libraries/com/mojang/text2speech/1.10.3/text2speech-1.10.3.jar");
+        let narrator_url =  "https://libraries.minecraft.net/com/mojang/text2speech/1.10.3/text2speech-1.10.3.jar".to_string();
+        download_map.insert(narrator_path, narrator_url);
+
+        Downloader::new(download_map)
+            .process()
+            .await
+            .unwrap();
+
+        // com/mojang/text2speech/1.10.3/text2speech-1.10.3.jar
+        //https://libraries.minecraft.net/com/mojang/text2speech/1.10.3/text2speech-1.10.3.jar 
+        
+        // build game args 
+        args = args.replace("${auth_player_name}", user.name.as_str());
+        args = args.replace("${version_name}", proj.files[choice].version.as_str());
+        args = args.replace("${game_directory}", instance.get_path().to_str().unwrap());
+        args = args.replace("${assets_root}", assets_path.to_str().unwrap());
+        args = args.replace("${assets_index_name}", asset_index);
+        args = args.replace("${auth_uuid}", user.id.as_str());
+        args = args.replace("${auth_access_token}", user.token.as_str());
+        args = args.replace("${user_type}", "mojang");
+
+        let mut invoker = Invoker::new(
+                "java".to_string(),
+                binpath.clone(),
+                classpaths.clone(),
+                args,
+                main_class.to_string()
+            );
+
+        let mut invoker_file_path = instance.get_path();
+        invoker_file_path.push("sml_invoker.json");
+
+        invoker.gen_invocation();
+        invoker.export_as_json(invoker_file_path);
+
+    }else{
+
+        // POST 1.13.2
+        let mut invoker = Invoker::new(
                 "java ".to_string(),
                 binpath,
                 classpaths,
-        format!("{} --assetsDir {} --assetIndex {} --gameDir {} --version  {} --username {} --accessToken {} --versionType release --userType mojang",
-				forge_args.unwrap(), assetspath.display(), asset_index, instance.get_path().display(), proj.files[choice].version, user.name, user.token),
+                format!("{} --assetsDir {} --assetIndex {} --gameDir {} --version  {} --username {} --accessToken {} --versionType release --userType mojang",
+				forge_args.unwrap(), assets_path.display(), asset_index, instance.get_path().display(), proj.files[choice].version, user.name, user.token),
                 main_class.to_string()
                 );
 
-    let mut invoker_file_path = instance.get_path();
-    invoker_file_path.push("sml_invoker.json");
+        let mut invoker_file_path = instance.get_path();
+        invoker_file_path.push("sml_invoker.json");
 
-    invoker.gen_invocation();
-    invoker.export_as_json(invoker_file_path);
+        invoker.gen_invocation();
+        invoker.export_as_json(invoker_file_path);
+
+    }
+
     info!("{}", Green.paint("Setup is complete!"));
 }
