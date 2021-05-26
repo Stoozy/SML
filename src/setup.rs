@@ -18,7 +18,7 @@ use std::{
     collections::HashMap,
     fs,
     fs::{File, OpenOptions},
-    io::BufReader,
+    io::{Write,BufReader},
     path::PathBuf,
 };
 
@@ -95,7 +95,6 @@ pub fn get_cp_from_version(
             path.push(match lib["downloads"]["artifact"]["path"].as_str() {
                 Some(val) => val,
                 None => {
-                    dbg!(lib);
                     println!("Couldn't get library path for {}, skipping", lib["downloads"]["artifact"]["name"]);
                     ""
                 }
@@ -167,9 +166,12 @@ pub async fn get_library_downloads(
 
     for (_i, lib) in libraries.iter().enumerate() {
         let artifact_path = match lib["downloads"]["artifact"]["path"].as_str() {
-            Some(val) => val,
+            Some(val) =>  {
+                val
+            },
             None => {
-                // skipping empty paths
+                // skipping on empty path
+                eprintln!("EMPTY PATH Skipping {}", lib["name"].as_str()?);
                 break;
             }
         };
@@ -181,13 +183,19 @@ pub async fn get_library_downloads(
             Some(val) => val,
             None => {
                 // skipping on empty url
+                eprintln!("EMPTY URL Skipping {}", lib["name"].as_str()?);
+
                 break;
             }
         };
 
-        // only download if url is valid
+        // only download if url is valid and
+        // the downloads hashmap doesn't contain
+        // the key ( avoid dupes )
         if !download_url.is_empty() {
             lib_downloads.insert(path, download_url.to_string());
+        }else{
+            eprintln!("Download url is empty {}", lib["name"].as_str()?);
         }
     }
 
@@ -553,6 +561,18 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
             .unwrap()
     );
 
+    let mut downloads_log_file_path = instance.get_path();
+    downloads_log_file_path.push("downloads.log");
+
+    let mut downloads_log_file = File::create(downloads_log_file_path).expect("Couldn't create file");
+
+    for (k,v) in downloads.clone().into_iter() {
+        let line = format!("{},{}\n", k.display(),v);
+        downloads_log_file.write(line.as_bytes()).expect("Error writing to file");
+    }
+
+
+
     Downloader::new(downloads)
         .process()
         .await
@@ -604,6 +624,25 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
 
         let mut args = forge_json["minecraftArguments"].as_str().unwrap().to_string();
 
+        // download text2speech narrator 1.10.2
+       
+        // THIS IS VERY HACKY
+        // but a fix for now...
+        //
+        let mut download_map = HashMap::new();
+        let mut narrator_path = instance.get_path();
+        narrator_path.push("libraries/com/mojang/text2speech/1.10.3/text2speech-1.10.3.jar");
+        let narrator_url =  "https://libraries.minecraft.net/com/mojang/text2speech/1.10.3/text2speech-1.10.3.jar".to_string();
+        download_map.insert(narrator_path, narrator_url);
+
+        Downloader::new(download_map)
+            .process()
+            .await
+            .unwrap();
+
+        // com/mojang/text2speech/1.10.3/text2speech-1.10.3.jar
+        //https://libraries.minecraft.net/com/mojang/text2speech/1.10.3/text2speech-1.10.3.jar 
+        
         // build game args 
         args = args.replace("${auth_player_name}", user.name.as_str());
         args = args.replace("${version_name}", proj.files[choice].version.as_str());
@@ -631,7 +670,6 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
     }else{
 
         // POST 1.13.2
-
         let mut invoker = Invoker::new(
                 "java ".to_string(),
                 binpath,
