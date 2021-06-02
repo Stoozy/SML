@@ -38,7 +38,7 @@ impl Invoker {
 
         match &self.custom_args {
             Some(args) => {
-                cmd.push_str(format!(" {}", args).as_str());
+                cmd.push_str(format!(" {} ", args).as_str());
             }
             None => (),
         }
@@ -61,7 +61,7 @@ impl Invoker {
         }
 
         // do user info separately
-        let userinfo_string = format!("--accessToken {} --username {}", 
+        let userinfo_string = format!(" --accessToken {} --username {} ", 
                                       self.auth_token, self.user_name);
         self.args.push_str(userinfo_string.as_str());
 
@@ -85,7 +85,7 @@ impl Invoker {
         };
 
         let serialized_invoker_data = json!({
-            "java":"java",
+            "java":"/home/stoozy/.minecraft/runtime/jre-legacy/linux/jre-legacy/bin/java",
             "binpath" : binpath_arg,
             "custom_args": custom_args,
             "classpaths" : self.classpaths,

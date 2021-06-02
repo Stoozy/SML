@@ -90,32 +90,47 @@ pub fn get_u64() -> Option<u64> {
     )
 }
 
-pub fn is_greater_version(version1: &str, version2: &str) -> bool {
+pub fn geq_version(version1: &str, version2: &str) -> bool {
     // serialize version as int and check if greater
     let v1_c: Vec<&str> = version1.split(".").collect();
     let v2_c: Vec<&str> = version2.split(".").collect();
 
+    // 1.v1_c[1].x  > 1.v2_c[1].x
+
     let mut v1 = 0;
     let mut v2 = 0;
-
+    
     for i in v1_c {
-        v1 = v1 * 10 + i.parse::<i32>().unwrap();
-    }
-    for i in v2_c {
-        v2 = v2 * 10 + i.parse::<i32>().unwrap();
+        v1 =  v1 * 10 +  match i.parse::<i32>(){
+            Ok(val) => val,
+            Err(_) => 0 
+        };
     }
 
-    v1 > v2
+    for i in v2_c {
+        v2 = v2 * 10 + match i.parse::<i32>(){
+            Ok(val) => val,
+            Err(_) =>  0
+                //panic!(" v1:{}, v2:{} ",v1,v2)
+        };
+    }
+
+    v1 >= v2
 }
 
-pub fn get_forge_args(json: serde_json::Value) -> Option<String> {
+pub fn get_forge_args(json: serde_json::Value, is_pre_13 : bool) -> Option<String> {
     let mut retstr = String::new();
     // get args here
-    let args = json["arguments"]["game"].as_array().unwrap();
-    for arg in args.iter() {
-        retstr.push(' ');
-        retstr.push_str(arg.as_str().unwrap());
+    if is_pre_13{
+        // parse args here
+    }else{
+        let args = json["arguments"]["game"].as_array().unwrap();
+        for arg in args.iter() {
+            retstr.push(' ');
+            retstr.push_str(arg.as_str().unwrap());
+        }
     }
+    
 
     Some(retstr)
 }
