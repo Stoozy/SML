@@ -578,9 +578,12 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
                 "java ".to_string(),
                 binpath,
                 classpaths,
-        format!("{} --assetsDir {} --assetIndex {} --gameDir {} --version  {} --username {} --accessToken {} --versionType release --userType mojang",
-				forge_args.unwrap(), assetspath.display(), asset_index, instance.get_path().display(), proj.files[choice].version, user.name, user.token),
-                main_class.to_string()
+        format!("{} --assetsDir {} --assetIndex {} --gameDir {} --version  {}  --versionType release --userType mojang",
+				forge_args.unwrap(), assetspath.display(), asset_index, instance.get_path().display(), proj.files[choice].version),
+                main_class.to_string(),
+                instance.name(),
+                user.name,
+                user.token,
                 );
 
     let mut invoker_file_path = instance.get_path();

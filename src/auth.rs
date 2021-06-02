@@ -1,8 +1,10 @@
 use serde::{Deserialize, Serialize};
+use serde_json::*;
 use std::fs::OpenOptions;
 use std::io::{self, Write};
 use std::path::PathBuf;
-use log::error;
+use ansi_term::Color::*;
+use crate::ima::InstanceManager;
 
 #[derive(Serialize, Deserialize)]
 pub struct User {
@@ -22,7 +24,11 @@ impl From<PathBuf> for User {
     }
 }
 
-pub async fn handle_auth() -> Result<User, ()> {
+pub async fn handle_auth(mut ima : InstanceManager) -> Result<User> {
+
+    // get all instance invokers
+    let invoker_list  = ima.get_list();
+
     let mut email: String = "".to_string();
 
     print!("Log in to mojang\nEmail: ");
@@ -34,13 +40,39 @@ pub async fn handle_auth() -> Result<User, ()> {
 
     let password: String = rpassword::prompt_password_stdout("Password: ").unwrap();
 
-    let user = authenticate(email.as_str(), password.as_str()).await;
+    let  user = authenticate(email.as_str(), password.as_str()).await;
+
     if user.is_none() {
-        error!("Not a valid user. Try again.");
-        Err(())
-    } else {
-        Ok(user.unwrap())
+        std::process::exit(0);
     }
+
+    let user = user.unwrap();
+
+    for invoker in invoker_list {
+        let read_file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(invoker.clone())
+            .unwrap();
+
+        let mut invoker_json : serde_json::Value = serde_json::from_reader(read_file).unwrap();
+
+        let mut invoker_file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(invoker)
+            .unwrap();
+
+        //println!("username: {} \nauth_token: {}", user.name, user.token);
+
+        invoker_json["user_name"] = json!(user.name);
+
+        invoker_json["auth_token"] = json!(user.token);
+
+        invoker_file.write_all(invoker_json.to_string().as_bytes()).unwrap();
+    }
+    
+    Ok(user)
 }
 
 pub async fn authenticate(email: &str, password: &str) -> Option<User> {
@@ -66,12 +98,20 @@ pub async fn authenticate(email: &str, password: &str) -> Option<User> {
     //let auth_data : serde_json::Value = serde_json::from_str(resp.text().await.unwrap().as_str()).unwrap();
     match resp {
         Ok(userinfo) => {
+            let userinfo = userinfo.text().await.unwrap();
+
             let userinfo_json: serde_json::Value =
-                serde_json::from_str(userinfo.text().await.unwrap().as_str()).expect("Invalid response data");
-                //userinfo.into_json().expect("Error parsing auth json");
+                serde_json::from_str(
+                    userinfo.as_str()
+                ).expect("Invalid response data");
 
             let access_token = userinfo_json["accessToken"].clone();
             let username = userinfo_json["selectedProfile"]["name"].clone();
+
+            if username.as_str().is_none() {
+                println!("{}", Red.paint("Invalid user."));
+                std::process::exit(0);
+            }
 
             Some(User {
                 name: username.as_str().expect("Error parsing json").to_string(),

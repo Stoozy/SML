@@ -11,18 +11,24 @@ pub struct Invoker {
     args: String,
     main: String,
     ccmd: Option<String>,
+    instance_name: String,
+    user_name: String,
+    auth_token: String
 }
 
 impl Invoker {
-    pub fn new(jp: String, bp: PathBuf, cp: Vec<PathBuf>, a: String, mc: String) -> Invoker {
+    pub fn new(java: String, binpath: PathBuf, classpaths: Vec<PathBuf>, args: String, main: String, instance_name: String, user_name : String, auth_token : String) -> Invoker {
         Invoker {
-            java: jp,
+            java,
             custom_args: None,
-            binpath: bp,
-            classpaths: cp,
-            args: a,
-            main: mc,
+            binpath,
+            classpaths,
+            args,
+            main,
             ccmd: None,
+            instance_name,
+            user_name,
+            auth_token
         }
     }
 
@@ -54,6 +60,11 @@ impl Invoker {
             cmd.push_str("\"")
         }
 
+        // do user info separately
+        let userinfo_string = format!("--accessToken {} --username {}", 
+                                      self.auth_token, self.user_name);
+        self.args.push_str(userinfo_string.as_str());
+
         // main class
         cmd.push_str(format!(" {} {}", self.main, self.args).as_str());
 
@@ -79,7 +90,10 @@ impl Invoker {
             "custom_args": custom_args,
             "classpaths" : self.classpaths,
             "mainclass" : self.main,
-            "game_args" : self.args
+            "game_args" : self.args,
+            "user_name" : self.user_name,
+            "instance_name" : self.instance_name,
+            "auth_token" : self.auth_token
         });
 
         let data = serde_json::to_string(&serialized_invoker_data)
@@ -134,6 +148,9 @@ impl From<&PathBuf> for Invoker {
         let game_args = invoker_json["game_args"].as_str().unwrap();
         let main_class = invoker_json["mainclass"].as_str().unwrap();
         let java_path = invoker_json["java"].as_str().unwrap();
+        let instance_name = invoker_json["instance_name"].as_str().unwrap();
+        let user_name = invoker_json["user_name"].as_str().unwrap();
+        let auth_token = invoker_json["auth_token"].as_str().unwrap();
 
         let mut classpaths_vec: Vec<PathBuf> = Vec::new();
         for path in c_paths {
@@ -149,6 +166,9 @@ impl From<&PathBuf> for Invoker {
             args: String::from(game_args),
             main: String::from(main_class),
             ccmd: Some(String::from("")),
+            instance_name: instance_name.to_string(),
+            user_name: user_name.to_string(),
+            auth_token: auth_token.to_string(),
         }
     }
 }

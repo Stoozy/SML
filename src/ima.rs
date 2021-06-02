@@ -8,6 +8,18 @@ pub struct Instance {
     path: PathBuf,
 }
 
+
+impl Instance {
+    pub fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    pub fn path(&self) -> PathBuf {
+        self.path.clone()
+    }
+}
+
+
 impl Instance {
     pub fn new(n: String, p: PathBuf) -> Instance {
         Instance { name: n, path: p }
@@ -30,6 +42,7 @@ impl Instance {
     }
 }
 
+#[derive(Clone)]
 pub struct InstanceManager {
     path: PathBuf,
 }
@@ -62,6 +75,7 @@ impl InstanceManager {
         Some(Instance::new(name, ipath))
     }
 
+    // Return paths to all instances invoker files
     pub fn get_list(&mut self) -> Vec<PathBuf> {
         let mut invoker_files: Vec<PathBuf> = Vec::new();
 
