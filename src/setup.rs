@@ -628,7 +628,6 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
        
         // THIS IS VERY HACKY
         // but a fix for now...
-        //
         let mut download_map = HashMap::new();
         let mut narrator_path = instance.get_path();
         narrator_path.push("libraries/com/mojang/text2speech/1.10.3/text2speech-1.10.3.jar");
@@ -677,8 +676,7 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
                 "java ".to_string(),
                 binpath,
                 classpaths,
-                format!("{} --assetsDir {} --assetIndex {} --gameDir {} --version  {}  --versionType release --userType mojang",
-				forge_args.unwrap(), assets_path.display(), asset_index, instance.get_path().display(), proj.files[choice].version),
+                format!("{} --assetsDir {} --assetIndex {} --gameDir {} --version  {}  --versionType release --userType mojang", forge_args.unwrap(), assets_path.display(), asset_index, instance.get_path().display(), proj.files[choice].version),
                 main_class.to_string(),
                 instance.name(),
                 user.name,
@@ -688,7 +686,6 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
         let mut invoker_file_path = instance.get_path();
         invoker_file_path.push("sml_invoker.json");
 
-        invoker.gen_invocation();
         invoker.export_as_json(invoker_file_path);
 
     }

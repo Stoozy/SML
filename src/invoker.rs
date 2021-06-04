@@ -66,7 +66,7 @@ impl Invoker {
         self.args.push_str(userinfo_string.as_str());
 
         // main class
-        cmd.push_str(format!(" {} {}", self.main, self.args).as_str());
+        cmd.push_str(format!(" {} {} ", self.main, self.args).as_str());
 
         self.ccmd = Some(cmd);
     }

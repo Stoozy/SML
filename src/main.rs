@@ -40,6 +40,7 @@ use env_logger;
 
 #[tokio::main]
 async fn main() {
+    // hard code info logging
     std::env::set_var("RUST_LOG", "info");
 
     env_logger::init();
@@ -164,7 +165,6 @@ async fn main() {
 
             let invoker_path = &list_vec[id_num as usize];
             let mut invoker = Invoker::from(invoker_path);
-            invoker.gen_invocation();
 
             let mut cwd = invoker_path.clone();
             cwd.pop(); // gets rid of the sml_invoker.json part of the  pathbuf
