@@ -1,4 +1,5 @@
 use serde_json::json;
+use subprocess::Redirection;
 use std::io::Write;
 use std::path::PathBuf;
 use subprocess::Exec;
@@ -126,8 +127,12 @@ impl Invoker {
         self.gen_invocation();
         Exec::shell(self.ccmd.clone().unwrap())
             .cwd(cwd)
+            .stdout(Redirection::Pipe)
             .popen()
-            .unwrap();
+            .unwrap()
+            .detach(); // detach the process after launching
+
+        std::process::exit(0);
     }
 }
 
