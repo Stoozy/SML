@@ -39,6 +39,10 @@ impl Invoker {
         }
     }
 
+    pub fn set_name(&mut self, new_name: String ){
+        self.instance_name = new_name;
+    }
+
     pub fn gen_invocation(&mut self) {
         let mut cmd: String = self.java.clone();
         cmd.push_str(format!(" -Djava.library.path={}", self.binpath.display()).as_str());

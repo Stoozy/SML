@@ -1,8 +1,7 @@
-use ansi_term::Color::*;
 use std::fs::{self, OpenOptions};
 use std::path::PathBuf;
 use crate::instance::Instance;
-use prettytable::{Table };
+use prettytable::Table;
 
 
 #[derive(Clone)]

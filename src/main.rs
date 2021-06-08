@@ -34,7 +34,7 @@ use std::io::Write;
 
 use crate::manager::InstanceManager;
 use crate::instance::Instance;
-use std::fs::{self, OpenOptions};
+use std::fs::{self};
 
 use ansi_term::Colour::*;
 use env_logger;
@@ -74,6 +74,7 @@ async fn main() {
         .arg(
             Arg::with_name("remove")
                 .short("r")
+                .long("remove")
                 .value_name("ID")
                 .help("Removes instance with the ID provided")
                 .takes_value(true),
@@ -84,6 +85,13 @@ async fn main() {
                 .value_name("ID")
                 .long("config")
                 .help("Configures instance with the ID provided")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("rename")
+                .long("rename")
+                .value_name("ID")
+                .help("Rename the instance with provided ID")
                 .takes_value(true),
         )
         .arg(
@@ -108,6 +116,7 @@ async fn main() {
         return;
     }
 
+    // CONFIGURE
     match app.value_of("config") {
         Some(id) =>{
             let instance_paths = ima.get_list();
@@ -135,17 +144,37 @@ async fn main() {
         None => ()
     }
 
-    
+    // RENAME
+    match app.value_of("rename") {
+        Some(id) => {
+            let instance_paths = ima.get_list();
 
+            for instance_path in instance_paths {
+                let instance = Instance::from(instance_path);
+                if &instance.uuid()[0..8] == id {
+                    let mut new_name : String = String::new();
+
+                    println!("Enter the new name: ");
+                    std::io::stdin()
+                        .read_line(&mut new_name)
+                        .expect("Unable to get user input");
+
+                    instance.rename(new_name);
+                }
+
+            }
+        },
+        None => (),
+    };
+    
+    // REMOVE 
     match app.value_of("remove") {
         Some(id) => {
             let instance_paths = ima.get_list();
 
             for instance_path in instance_paths {
-                println!("{}", instance_path.display());
 
                 let instance = Instance::from(instance_path);
-                println!("{}", &instance.uuid()[0..8]);
 
                 if &instance.uuid()[0..8] == id {
                     instance.delete();
@@ -159,6 +188,7 @@ async fn main() {
 
     }
 
+    // LAUNCH
     match app.value_of("launch") {
         Some(id) => {
             let instance_paths = ima.get_list();
@@ -174,7 +204,7 @@ async fn main() {
         None => (),
     }
 
-    // authentication
+    // AUTHENTICATION
     if app.is_present("authenticate") {
         let user = auth::handle_auth(ima.clone()).await.expect("Failed authentication");
 

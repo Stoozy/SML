@@ -18,8 +18,7 @@ I am working on this project purely for the learning experience, there are worki
 
 Windows:
  - Go to releases
- - Install using the msi to `C:\sml`
- - This installer adds the binary to path by default
+ - Install using the msi installer
 
 Linux:
  - Go to releases
@@ -35,21 +34,21 @@ Stoozy <mahinsemail@gmail.com>
 A Minecraft Modded Launcher Command Line Interface
 
 USAGE:
-    sml [FLAGS] [OPTIONS]
+    sml.exe [FLAGS] [OPTIONS]
 
 FLAGS:
     -a, --auth       Log in through mojang
-    -c, --config     configures instance
     -h, --help       Prints help information
         --list       Lists all SML instances
     -V, --version    Prints version information
 
 OPTIONS:
+    -c, --config <ID>     Configures instance with the ID provided
     -i, --install <ID>    Searches for project in curseforge with given ID and installs it
         --launch <ID>     Launches instance with specific ID
-    -r <ID>               Removes instance with the ID provided
+    -r, --remove <ID>     Removes instance with the ID provided
+        --rename <ID>     Rename the instance with provided ID
 ```
-
 ## Forge Installer
 
 This launcher uses a wrapper class around the forge installer written by @xfl03 in order to automate the installation. See https://github.com/xfl03/ForgeInstallerHeadless

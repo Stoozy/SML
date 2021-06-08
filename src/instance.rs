@@ -1,3 +1,4 @@
+
 use std::fs;
 use std::fs::OpenOptions;
 use std::path::PathBuf;
@@ -38,8 +39,23 @@ impl Instance {
         self.name.clone()
     }
 
-    pub fn rename(& mut self, new_name: String) {
-        self.name = new_name;
+    pub fn rename(&self, new_name: String) {
+        let mut invoker_file_path = self.path.clone();
+        invoker_file_path.push("sml_invoker.json");
+
+        let file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(invoker_file_path.clone())
+            .unwrap();
+
+        let mut invoker_json : serde_json::Value = serde_json::from_reader(file)
+            .expect("Invalid invoker json");
+
+        invoker_json["instance_name"] = serde_json::Value::String(new_name);
+
+        std::fs::write(invoker_file_path, invoker_json.to_string())
+            .expect("Unable to write to sml invoker file");
     }
 
     pub fn uuid(&self) -> String {
@@ -63,9 +79,6 @@ impl Instance {
 
         std::fs::write(invoker_file_path, invoker_json.to_string())
             .expect("Unable to write to sml invoker file");
-
-
-
     }
 
     pub fn launch(&self) {
@@ -109,6 +122,4 @@ impl From<PathBuf> for Instance {
 
    }
 }
-
-
 
