@@ -1,6 +1,7 @@
 //use crate::auth;
 use crate::forge;
-use crate::ima::{Instance, InstanceManager};
+use crate::instance::Instance;
+use crate::manager::InstanceManager;
 use crate::invoker::Invoker;
 use crate::util;
 
@@ -8,6 +9,7 @@ use crate::{
     cf::{CFFile, CFProject},
     downloader::Downloader,
 };
+
 use ansi_term::Color::*;
 //use serde_json::*;
 

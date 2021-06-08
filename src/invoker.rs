@@ -127,7 +127,7 @@ impl Invoker {
         self.gen_invocation();
         Exec::shell(self.ccmd.clone().unwrap())
             .cwd(cwd)
-            .stdout(Redirection::Pipe)
+            //.stdout(Redirection::Pipe)
             .popen()
             .unwrap()
             .detach(); // detach the process after launching

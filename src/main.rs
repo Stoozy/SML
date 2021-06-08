@@ -21,7 +21,8 @@ pub mod auth;
 pub mod cf;
 pub mod downloader;
 pub mod forge;
-pub mod ima;
+pub mod instance;
+pub mod manager;
 pub mod invoker;
 pub mod setup;
 pub mod util;
@@ -31,7 +32,7 @@ use clap::*;
 use std::io::Write;
 
 
-use crate::ima::InstanceManager;
+use crate::manager::InstanceManager;
 use crate::invoker::Invoker;
 use std::fs::{self, OpenOptions};
 
