@@ -80,6 +80,13 @@ async fn main() {
                 .takes_value(true),
         )
         .arg(
+            Arg::with_name("print-config")
+                .long("print-config")
+                .value_name("ID")
+                .help("Shows the custom flags for an instance")
+                .takes_value(true)
+        )
+        .arg(
             Arg::with_name("config")
                 .short("c")
                 .value_name("ID")
@@ -143,6 +150,22 @@ async fn main() {
         },
         None => ()
     }
+
+    //  SHOW CONFIG
+    match app.value_of("print-config") {
+        Some(id) => {
+            let instance_paths = ima.get_list();
+
+            for instance_path in instance_paths {
+                let instance = Instance::from(instance_path);
+                if &instance.uuid()[0..8] == id {
+                    instance.display_config(); 
+                }
+
+            }
+        },
+        None => (),
+    };
 
     // RENAME
     match app.value_of("rename") {

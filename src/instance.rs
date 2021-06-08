@@ -35,6 +35,23 @@ impl Instance {
         }
     }
 
+    pub fn display_config(&self) {
+        let mut invoker_file_path = self.path.clone();
+        invoker_file_path.push("sml_invoker.json");
+
+        let file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(invoker_file_path.clone())
+            .unwrap();
+
+        let invoker_json : serde_json::Value = serde_json::from_reader(file)
+            .expect("Invalid invoker json");
+
+        let config = invoker_json["custom_args"].as_str().unwrap();
+        println!("{}", config);
+    }
+
     pub fn name(&self) -> String {
         self.name.clone()
     }
