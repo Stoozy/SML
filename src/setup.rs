@@ -4,6 +4,7 @@ use crate::instance::Instance;
 use crate::manager::InstanceManager;
 use crate::invoker::Invoker;
 use crate::util;
+use crate::instance::InstanceType;
 
 use crate::{
     cf::{CFFile, CFProject},
@@ -654,6 +655,7 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
         args = args.replace("${auth_access_token}", user.token.as_str());
         args = args.replace("${user_type}", "mojang");
 
+        // First time setup
         let mut invoker = Invoker::new(
                 "java".to_string(),
                 binpath.clone(),
@@ -661,6 +663,7 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
                 args,
                 main_class.to_string(),
                 instance.name(),
+                InstanceType::Forge,
                 user.name,
                 user.token
             );
@@ -681,6 +684,7 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
                 format!("{} --assetsDir {} --assetIndex {} --gameDir {} --version  {}  --versionType release --userType mojang", forge_args.unwrap(), assets_path.display(), asset_index, instance.get_path().display(), proj.files[choice].version),
                 main_class.to_string(),
                 instance.name(),
+                InstanceType::Forge,
                 user.name,
                 user.token,
             );

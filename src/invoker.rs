@@ -1,9 +1,13 @@
 use serde_json::json;
 use subprocess::Redirection;
+use uuid::Uuid;
 use std::io::Write;
 use std::path::PathBuf;
 use subprocess::Exec;
 
+use crate::instance::InstanceType;
+
+#[derive(Clone)]
 pub struct Invoker {
     java: String,
     custom_args: Option<String>,
@@ -12,13 +16,14 @@ pub struct Invoker {
     args: String,
     main: String,
     ccmd: Option<String>,
+    instance_type: InstanceType,
     instance_name: String,
     user_name: String,
     auth_token: String
 }
 
 impl Invoker {
-    pub fn new(java: String, binpath: PathBuf, classpaths: Vec<PathBuf>, args: String, main: String, instance_name: String, user_name : String, auth_token : String) -> Invoker {
+    pub fn new(java: String, binpath: PathBuf, classpaths: Vec<PathBuf>, args: String, main: String, instance_name: String, instance_type: InstanceType, user_name : String, auth_token : String) -> Invoker {
         Invoker {
             java,
             custom_args: None,
@@ -27,6 +32,7 @@ impl Invoker {
             args,
             main,
             ccmd: None,
+            instance_type,
             instance_name,
             user_name,
             auth_token
@@ -85,6 +91,14 @@ impl Invoker {
             None => "",
         };
 
+        let new_uuid = Uuid::new_v4();
+
+        let instance_type_str = match &self.instance_type {
+            InstanceType::Forge => "FORGE",
+            InstanceType::Vanilla => "VANILLA",
+            InstanceType::Fabric => "FABRIC",
+        };
+
         let serialized_invoker_data = json!({
             "java":"java",
             "binpath" : binpath_arg,
@@ -94,7 +108,9 @@ impl Invoker {
             "game_args" : self.args,
             "user_name" : self.user_name,
             "instance_name" : self.instance_name,
-            "auth_token" : self.auth_token
+            "auth_token" : self.auth_token,
+            "instance_uuid" : new_uuid.to_string(),
+            "instance_type": instance_type_str
         });
 
         let data = serde_json::to_string(&serialized_invoker_data)
@@ -127,7 +143,7 @@ impl Invoker {
         self.gen_invocation();
         Exec::shell(self.ccmd.clone().unwrap())
             .cwd(cwd)
-            //.stdout(Redirection::Pipe)
+            .stdout(Redirection::Pipe)
             .popen()
             .unwrap()
             .detach(); // detach the process after launching
@@ -156,6 +172,8 @@ impl From<&PathBuf> for Invoker {
         let instance_name = invoker_json["instance_name"].as_str().unwrap();
         let user_name = invoker_json["user_name"].as_str().unwrap();
         let auth_token = invoker_json["auth_token"].as_str().unwrap();
+        let instance_type_str = invoker_json["instance_type"].as_str().unwrap();
+
 
         let mut classpaths_vec: Vec<PathBuf> = Vec::new();
         for path in c_paths {
@@ -174,6 +192,12 @@ impl From<&PathBuf> for Invoker {
             instance_name: instance_name.to_string(),
             user_name: user_name.to_string(),
             auth_token: auth_token.to_string(),
+            instance_type: match instance_type_str {
+                "FORGE"     => InstanceType::Forge,
+                "VANILLA"   => InstanceType::Vanilla,
+                "FABRIC"    => InstanceType::Fabric,
+                _ => InstanceType::Vanilla,
+            },
         }
     }
 }

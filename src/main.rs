@@ -12,9 +12,9 @@ You should have received a copy of the GNU General Public License along with thi
  
  */
 
+#[macro_use] extern crate prettytable;
 extern crate clap;
 extern crate ftp;
-//extern crate env_logger;
 
 
 pub mod auth;
@@ -33,7 +33,7 @@ use std::io::Write;
 
 
 use crate::manager::InstanceManager;
-use crate::invoker::Invoker;
+use crate::instance::Instance;
 use std::fs::{self, OpenOptions};
 
 use ansi_term::Colour::*;
@@ -147,30 +147,37 @@ async fn main() {
 
     match app.value_of("remove") {
         Some(id) => {
-            let id_num = id.parse::<u64>().expect("Not a valid id");
-            let instances = ima.get_list();
-            let invoker_path = &instances[id_num as usize];
+            let instance_paths = ima.get_list();
 
-            let mut cwd = invoker_path.clone();
-            cwd.pop();
+            for instance_path in instance_paths {
+                println!("{}", instance_path.display());
 
-            fs::remove_dir_all(cwd).expect("Unable to remove instance");
-        }
+                let instance = Instance::from(instance_path);
+                println!("{}", &instance.uuid()[0..8]);
+
+                if &instance.uuid()[0..8] == id {
+                    instance.delete();
+                    std::process::exit(0);
+                }
+            }
+
+            println!("{} {}",Red.paint("Instance not found: "), id);
+        },
         None => (),
+
     }
 
     match app.value_of("launch") {
         Some(id) => {
-            let id_num = id.parse::<u64>().expect("Not a valid id");
-            let list_vec = ima.get_list();
+            let instance_paths = ima.get_list();
+            for instance_path in instance_paths {
+                let instance = Instance::from(instance_path);
+                if &instance.uuid()[0..8] == id {
+                    instance.launch();
+                }
+            }
 
-            let invoker_path = &list_vec[id_num as usize];
-            let mut invoker = Invoker::from(invoker_path);
-
-            let mut cwd = invoker_path.clone();
-            cwd.pop(); // gets rid of the sml_invoker.json part of the  pathbuf
-
-            invoker.invoke();
+            println!("{}",Red.paint("Instance not found"));
         }
         None => (),
     }

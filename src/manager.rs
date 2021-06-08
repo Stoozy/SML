@@ -1,7 +1,8 @@
 use ansi_term::Color::*;
-use std::fs;
+use std::fs::{self, OpenOptions};
 use std::path::PathBuf;
 use crate::instance::Instance;
+use prettytable::{Table, Row, Cell};
 
 
 #[derive(Clone)]
@@ -56,26 +57,28 @@ impl InstanceManager {
     }
 
     pub fn display_list(&mut self) {
-        let instances_dir = self.path.clone();
-        let mut counter: u64 = 0;
+        let instances  = self.get_list();
 
-        for res in fs::read_dir(instances_dir).unwrap() {
-            if let Ok(entry) = res {
-                let ep = entry.path();
+        let mut table = Table::new();
+        table.add_row(row!("ID", "NAME"));
 
-                let instance_name = entry.file_name();
-                let mut invoker_file = ep.clone();
-                invoker_file.push("sml_invoker.json");
+        for instance in instances {
+            let file  = OpenOptions::new()
+                        .read(true)
+                        .write(true)
+                        .open(instance)
+                        .unwrap();
+            let instance_json  : serde_json::Value = serde_json::from_reader(file).unwrap();
+            let name = instance_json["instance_name"].as_str().unwrap();
+            let uuid = instance_json["instance_uuid"].as_str().unwrap();
+            let mut uuid_prefix: String = String::new();
+            uuid_prefix.push_str(&uuid[0..8]);
 
-                if invoker_file.exists() {
-                    println!(
-                        "[{}] {}",
-                        Yellow.paint(format!("{}", counter)),
-                        instance_name.to_str().unwrap()
-                    );
-                    counter += 1;
-                }
-            }
+            table.add_row(row!(uuid_prefix, name));
         }
+
+        table.printstd();
     }
 }
+
+
