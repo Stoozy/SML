@@ -46,6 +46,28 @@ impl Instance {
         self.uuid.unwrap().to_string()
     }
 
+    pub fn set_config(&self, new_config : String) {
+        let mut invoker_file_path = self.path.clone();
+        invoker_file_path.push("sml_invoker.json");
+
+        let file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(invoker_file_path.clone())
+            .unwrap();
+
+        let mut invoker_json : serde_json::Value = serde_json::from_reader(file)
+            .expect("Invalid invoker json");
+
+        invoker_json["custom_args"] = serde_json::Value::String(new_config);
+
+        std::fs::write(invoker_file_path, invoker_json.to_string())
+            .expect("Unable to write to sml invoker file");
+
+
+
+    }
+
     pub fn launch(&self) {
         match self.invoker.clone() {
             Some(mut invoker) => {

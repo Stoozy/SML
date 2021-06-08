@@ -81,9 +81,10 @@ async fn main() {
         .arg(
             Arg::with_name("config")
                 .short("c")
+                .value_name("ID")
                 .long("config")
-                .help("configures instance")
-                .takes_value(false),
+                .help("Configures instance with the ID provided")
+                .takes_value(true),
         )
         .arg(
             Arg::with_name("install")
@@ -107,43 +108,34 @@ async fn main() {
         return;
     }
 
-    if app.is_present("config") {
-        ima.display_list();
-        println!("Please enter which instance you would like to configure: ");
+    match app.value_of("config") {
+        Some(id) =>{
+            let instance_paths = ima.get_list();
 
-        let instances = ima.get_list();
-        let id = util::get_u64().expect("Invalid number");
-        let invoker_file_path = &instances[id as usize];
+            for instance_path in instance_paths {
+                let instance = Instance::from(instance_path);
+                if &instance.uuid()[0..8] == id {
+                    
+                    println!("Enter custom java flags: ");
 
-        dbg!(invoker_file_path.clone());
-        let invoker_file = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .open(invoker_file_path.clone())
-            .expect("Unable to open sml invoker file");
+                    let mut new_custom_args = String::new();
 
-        let mut invoker_json: serde_json::Value =
-            serde_json::from_reader(invoker_file).expect("Invalid sml invoker json file");
+                    std::io::stdin()
+                        .read_line(&mut new_custom_args)
+                        .expect("Unable to get user input");
 
-        let mut new_custom_args = String::new();
+                    let len = new_custom_args.trim_end_matches(&['\r', '\n'][..]).len();
+                    new_custom_args.truncate(len);
 
-        println!("Enter custom java flags: ");
+                    instance.set_config(new_custom_args);
+                }
+            }
 
-        std::io::stdin()
-            .read_line(&mut new_custom_args)
-            .expect("Unable to get user input");
-
-        // no need for newline characters
-        let len = new_custom_args.trim_end_matches(&['\r', '\n'][..]).len();
-        new_custom_args.truncate(len);
-
-        invoker_json["custom_args"] = serde_json::Value::String(new_custom_args);
-
-        std::fs::write(invoker_file_path, invoker_json.to_string())
-            .expect("Unable to write to sml invoker file");
-
-        println!("{}", Green.paint("Configuration complete!"))
+        },
+        None => ()
     }
+
+    
 
     match app.value_of("remove") {
         Some(id) => {
