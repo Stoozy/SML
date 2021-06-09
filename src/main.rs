@@ -222,7 +222,6 @@ async fn main() {
                 }
             }
 
-            println!("{}",Red.paint("Instance not found"));
         }
         None => (),
     }

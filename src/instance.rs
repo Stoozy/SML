@@ -99,9 +99,10 @@ impl Instance {
     }
 
     pub fn launch(&self) {
+
         match self.invoker.clone() {
             Some(mut invoker) => {
-                invoker.invoke();
+                invoker.invoke(true);
             },
             None => (),
         }

@@ -45,7 +45,7 @@ impl Invoker {
 
     pub fn gen_invocation(&mut self) {
         let mut cmd: String = self.java.clone();
-        cmd.push_str(format!(" -Djava.library.path={}", self.binpath.display()).as_str());
+        cmd.push_str(format!(" -Dfml.ignoreInvalidMinecraftCertificates=true  -Djava.library.path={} ", self.binpath.display()).as_str());
 
         match &self.custom_args {
             Some(args) => {
@@ -56,9 +56,10 @@ impl Invoker {
 
         // classpaths
         cmd.push_str(" -cp ");
-        if cfg!(windows) {
-            cmd.push_str("\"")
-        }
+        //if cfg!(windows) {
+        //    cmd.push_str("\"")
+        //}
+        
         for cp in self.classpaths.clone() {
             let cp_str = if cfg!(windows) {
                 format!("{};", cp.display())
@@ -67,9 +68,9 @@ impl Invoker {
             };
             cmd.push_str(cp_str.as_str());
         }
-        if cfg!(windows) {
-            cmd.push_str("\"")
-        }
+        //if cfg!(windows) {
+            //cmd.push_str("\"")
+        //}
 
         // do user info separately
         let userinfo_string = format!(" --accessToken {} --username {} ", 
@@ -83,7 +84,12 @@ impl Invoker {
     }
 
     pub fn display_invocation(&self) {
-        println!("{}", self.ccmd.clone().unwrap());
+        match self.ccmd.clone() {
+            Some(cmd) => {
+                println!("{}", cmd);
+            },
+            None => println!("No command ") 
+        }
     }
 
     pub fn export_as_json(&mut self, path: PathBuf) {
@@ -132,7 +138,7 @@ impl Invoker {
         };
     }
 
-    pub fn invoke(&mut self) {
+    pub fn invoke(&mut self, verbose : bool) {
         let mut cps = "\"".to_string();
         for cp in &self.classpaths {
             cps.push_str(format!("{};", cp.display()).as_str());
@@ -145,12 +151,27 @@ impl Invoker {
         cwd.pop();
 
         self.gen_invocation();
-        Exec::shell(self.ccmd.clone().unwrap())
-            .cwd(cwd)
-            .stdout(Redirection::Pipe)
-            .popen()
-            .unwrap()
-            .detach(); // detach the process after launching
+        //self.display_invocation();
+        
+        if verbose {
+
+            dbg!(self.ccmd.clone().unwrap()); 
+            dbg!(cwd.clone());
+            // keep output in terminal and keep subprocess
+            Exec::shell(self.ccmd.clone().unwrap())
+                .cwd(cwd)
+                .popen()
+                .unwrap();
+        }else{
+            Exec::shell(self.ccmd.clone().unwrap())
+                .cwd(cwd)
+                .stdout(Redirection::Pipe)
+                .popen()
+                .unwrap()
+                .detach();
+ 
+        }
+         // detach the process after launching
 
         std::process::exit(0);
     }
