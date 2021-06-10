@@ -20,23 +20,25 @@ extern crate ftp;
 pub mod auth;
 pub mod cf;
 pub mod downloader;
-pub mod forge;
 pub mod instance;
 pub mod manager;
 pub mod invoker;
 pub mod setup;
 pub mod util;
+pub mod types;
 
-use clap::*;
+
 
 use std::io::Write;
-
+use std::fs;
 
 use crate::manager::InstanceManager;
 use crate::instance::Instance;
-use std::fs::{self};
+use crate::types::forge;
+
 
 use ansi_term::Colour::*;
+use clap::*;
 use env_logger;
 
 #[tokio::main]
@@ -89,8 +91,8 @@ async fn main() {
         .arg(
             Arg::with_name("config")
                 .short("c")
-                .value_name("ID")
                 .long("config")
+                .value_name("ID")
                 .help("Configures instance with the ID provided")
                 .takes_value(true),
         )
@@ -102,16 +104,15 @@ async fn main() {
                 .takes_value(true),
         )
         .arg(
-            Arg::with_name("install")
-                .short("i")
-                .long("install")
-                .value_name("ID")
-                .help("Searches for project in curseforge with given ID and installs it")
+            Arg::with_name("add-instance")
+                .short("a")
+                .long("add-instance")
+                .value_name("TYPE")
+                .help("Add a new instance. Types can be the following : forge, vanilla, or fabric.")
                 .takes_value(true),
         )
         .arg(
             Arg::with_name("authenticate")
-                .short("a")
                 .long("auth")
                 .help("Log in through mojang")
                 .takes_value(false),
@@ -237,15 +238,35 @@ async fn main() {
         fs::write(user_path.clone(), user_data.as_bytes()).expect("Couldn't save user info");
     }
 
-    match app.value_of("install") {
-        Some(id) => {
+    match app.value_of("add-instance") {
+
+        Some(instance_type) => {
+
             // if there is no userinfo, stop the setup process
             if !user_path.exists() {
                 println!("{}", Red.paint("Please authenticate first!"));
                 return;
             }
-            setup::forge_setup(ima, id.parse::<u64>().expect("Not a valid id"), user_path).await;
-        }
+
+
+            // instance type based logic
+            match instance_type.to_lowercase().as_str() {
+                "forge" => {
+                    println!("Curseforge project ID: ");
+                    let id = util::get_u64().unwrap();
+                    forge::setup(ima, id, user_path).await;
+                },
+                "vanilla" => {
+
+                },
+                "fabric" => {
+
+                },
+                _ => {
+                    println!("{}", Red.paint("Invalid instance type"));
+                }
+            }
+                    }
         None => {}
     };
 }

@@ -28,6 +28,7 @@ Linux:
 
 ## Usage
 
+
 ```
 SML 0.1.0
 Stoozy <mahinsemail@gmail.com>
@@ -37,27 +38,25 @@ USAGE:
     sml.exe [FLAGS] [OPTIONS]
 
 FLAGS:
-    -a, --auth       Log in through mojang
+        --auth       Log in through mojang
     -h, --help       Prints help information
         --list       Lists all SML instances
     -V, --version    Prints version information
 
 OPTIONS:
-    -c, --config <ID>     Configures instance with the ID provided
-    -i, --install <ID>    Searches for project in curseforge with given ID and installs it
-        --launch <ID>     Launches instance with specific ID
-    -r, --remove <ID>     Removes instance with the ID provided
-        --rename <ID>     Rename the instance with provided ID
+    -a, --add-instance <TYPE>    Add a new instance. Types can be the following : forge, vanilla, or fabric.
+    -c, --config <ID>            Configures instance with the ID provided
+        --launch <ID>            Launches instance with specific ID
+        --print-config <ID>      Shows the custom flags for an instance
+    -r, --remove <ID>            Removes instance with the ID provided
+        --rename <ID>            Rename the instance with provided ID
 ```
-## Forge Installer
 
-This launcher uses a wrapper class around the forge installer written by @xfl03 in order to automate the installation. See https://github.com/xfl03/ForgeInstallerHeadless
+
 
 ## What doesn't work right now
-
-Fabric and Vanilla are not supported yet. 
-Forge packs with version less than 1.13.
-
+    - Fabric Modpacks
+    - Vanilla 
 
 ## Issues
 
