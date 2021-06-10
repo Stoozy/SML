@@ -41,6 +41,8 @@ use std::{
 
 use zip::ZipArchive;
 
+static FORGE_PRE13_ID_BLACKLIST : [&str;1] = ["forge-14.23.5.2838"]; 
+
 // needed for serde json serialization
 
 pub async fn get_modslist(chosen_proj: CFFile, instance: Instance) {
@@ -362,6 +364,34 @@ pub async fn get_mod_downloads(
                     downloads_map.insert(download_path, download_url);
                 }
             }
+
+            // no mod has been found matching the id
+            // download based on mc version
+
+            for (_i, modfile) in modfiles.iter().enumerate() {
+                let modfile_mc_versions = modfile["versions"].as_array().unwrap();
+                for version in modfile_mc_versions {
+                    let version_str = version.as_str().unwrap();
+
+                    if version_str.to_string() == mc_version {
+
+                        let cf_file = CFFile {
+                            id: modfile["id"].as_u64().unwrap(),
+                            display:modfile["display"].as_str().unwrap().to_string(),
+                            name: modfile["name"].as_str().unwrap().to_string(),
+                            ftype: modfile["type"].as_str().unwrap().to_string(),
+                            version: modfile["version"].as_str().unwrap().to_string(),
+                        };
+                        let download_url = cf_file.get_download_url();
+                        let mut download_path = mods_path.clone();
+                        download_path.push(cf_file.name);
+
+                        downloads_map.insert(download_path, download_url);
+                        break;
+                    }
+
+                }
+            }
         }
     }
 
@@ -483,9 +513,18 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
     let manifest_json: serde_json::Value =
         serde_json::from_reader(manifest_file).expect("Manifest contains invalid json");
 
-    let modloader = manifest_json["minecraft"]["modLoaders"][0]["id"]
+    let mut modloader = manifest_json["minecraft"]["modLoaders"][0]["id"]
         .as_str()
         .unwrap();
+    
+
+    // check if modloader is in blacklist
+    for id in FORGE_PRE13_ID_BLACKLIST.iter() {
+        if *id == modloader {
+            modloader =  "forge-14.23.5.2855";
+        }
+    }
+
 
     // format is like `forge-${version}`
     let modloader_split: Vec<&str> = modloader.split('-').collect();
@@ -581,14 +620,14 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
     let mut downloads_log_file_path = instance.get_path();
     downloads_log_file_path.push("downloads.log");
 
-    let mut downloads_log_file = File::create(downloads_log_file_path).expect("Couldn't create file");
+    // no need for logging anymore
 
-    for (k,v) in downloads.clone().into_iter() {
-        let line = format!("{},{}\n", k.display(),v);
-        downloads_log_file.write(line.as_bytes()).expect("Error writing to file");
-    }
+    //let mut downloads_log_file = File::create(downloads_log_file_path).expect("Couldn't create file");
 
-
+    //for (k,v) in downloads.clone().into_iter() {
+    //    let line = format!("{},{}\n", k.display(),v);
+    //    downloads_log_file.write(line.as_bytes()).expect("Error writing to file");
+    //}
 
     Downloader::new(downloads)
         .process()
@@ -712,3 +751,4 @@ pub async fn forge_setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) 
 
     info!("{}", Green.paint("Setup is complete!"));
 }
+
