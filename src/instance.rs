@@ -102,7 +102,7 @@ impl Instance {
 
         match self.invoker.clone() {
             Some(mut invoker) => {
-                invoker.invoke(false);
+                invoker.invoke(true);
             },
             None => (),
         }

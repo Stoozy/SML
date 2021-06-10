@@ -91,6 +91,11 @@ pub async fn setup(mut instance_manager: InstanceManager, user_path: PathBuf) {
 
             // get a list of all downloads
             let mut downloads = setup::get_library_downloads(libpath.clone(), vanilla_manifest_path.clone()).await.unwrap();
+            let mut narrator_path = instance.get_path();
+            narrator_path.push("libraries/com/mojang/text2speech/1.10.3/text2speech-1.10.3.jar");
+            let narrator_url =  "https://libraries.minecraft.net/com/mojang/text2speech/1.10.3/text2speech-1.10.3.jar".to_string();
+            downloads.insert(narrator_path, narrator_url);
+
 
             // add client.jar to download
             let mut client_jarpath = instance.get_path();
