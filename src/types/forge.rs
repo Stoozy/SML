@@ -232,8 +232,8 @@ pub async fn setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
             .unwrap()
     );
 
-    let mut downloads_log_file_path = instance.get_path();
-    downloads_log_file_path.push("downloads.log");
+    //let mut downloads_log_file_path = instance.get_path();
+    //downloads_log_file_path.push("downloads.log");
 
     // no need for logging anymore
 

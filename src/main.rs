@@ -34,7 +34,7 @@ use std::fs;
 
 use crate::manager::InstanceManager;
 use crate::instance::Instance;
-use crate::types::forge;
+use crate::types::{forge, vanilla};
 
 
 use ansi_term::Colour::*;
@@ -257,7 +257,7 @@ async fn main() {
                     forge::setup(ima, id, user_path).await;
                 },
                 "vanilla" => {
-
+                    vanilla::setup(ima, user_path).await;
                 },
                 "fabric" => {
 
