@@ -35,7 +35,7 @@ use std::{
     collections::HashMap,
     fs,
     fs::{File, OpenOptions},
-    io::{Write,BufReader},
+    io::BufReader,
     path::PathBuf,
 };
 
@@ -64,9 +64,9 @@ pub async fn get_modslist(chosen_proj: CFFile, instance: Instance) {
 
     // extract zip
     let modpack_zip = fs::File::open(download_path.clone()).expect("Couldn't open modslist");
-    println!("Downloaded mods list");
+    info!("Downloaded mods list");
 
-    println!("Extracting mods list");
+    info!("Extracting mods list");
     let mut zip = ZipArchive::new(modpack_zip).unwrap();
     let mut extract_path = download_path.clone();
     extract_path.pop();
@@ -341,10 +341,12 @@ pub async fn get_mod_downloads(
                 Some(val) => val,
                 None => {
                     dbg!(mod_json);
-                    warn!("Could not parse files list");
+                    warn!("Could not get files list (Most likely invalid json)");
                     continue;
                 }
             };
+
+            let mut mod_found = false; 
 
             for (_i, modfile) in modfiles.iter().enumerate() {
                 // found right mod file now download it
@@ -362,36 +364,42 @@ pub async fn get_mod_downloads(
                     download_path.push(cf_file.name);
 
                     downloads_map.insert(download_path, download_url);
+                    mod_found = true;
                 }
             }
 
             // no mod has been found matching the id
             // download based on mc version
 
-            for (_i, modfile) in modfiles.iter().enumerate() {
-                let modfile_mc_versions = modfile["versions"].as_array().unwrap();
-                for version in modfile_mc_versions {
-                    let version_str = version.as_str().unwrap();
+            if !mod_found {
+                for (_i, modfile) in modfiles.iter().enumerate() {
+                    let modfile_mc_versions = modfile["versions"].as_array().unwrap();
+                    for version in modfile_mc_versions {
+                        let version_str = version.as_str().unwrap();
 
-                    if version_str.to_string() == mc_version {
+                        if version_str.to_string() == mc_version {
 
-                        let cf_file = CFFile {
-                            id: modfile["id"].as_u64().unwrap(),
-                            display:modfile["display"].as_str().unwrap().to_string(),
-                            name: modfile["name"].as_str().unwrap().to_string(),
-                            ftype: modfile["type"].as_str().unwrap().to_string(),
-                            version: modfile["version"].as_str().unwrap().to_string(),
-                        };
-                        let download_url = cf_file.get_download_url();
-                        let mut download_path = mods_path.clone();
-                        download_path.push(cf_file.name);
+                            let cf_file = CFFile {
+                                id: modfile["id"].as_u64().unwrap(),
+                                display:modfile["display"].as_str().unwrap().to_string(),
+                                name: modfile["name"].as_str().unwrap().to_string(),
+                                ftype: modfile["type"].as_str().unwrap().to_string(),
+                                version: modfile["version"].as_str().unwrap().to_string(),
+                            };
+                            let download_url = cf_file.get_download_url();
+                            let mut download_path = mods_path.clone();
+                            download_path.push(cf_file.name);
 
-                        downloads_map.insert(download_path, download_url);
-                        break;
+                            downloads_map.insert(download_path, download_url);
+                            mod_found = true;
+                            break;
+                        }
                     }
 
+                    if mod_found { break; }
                 }
             }
+            
         }
     }
 
