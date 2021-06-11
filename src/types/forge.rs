@@ -316,17 +316,18 @@ pub async fn setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
         // build game args 
         args = args.replace("${auth_player_name}", user.name.as_str());
         args = args.replace("${version_name}", proj.files[choice].version.as_str());
-        args = args.replace("${game_directory}", instance.get_path().to_str().unwrap());
-        args = args.replace("${assets_root}", assets_path.to_str().unwrap());
+        args = args.replace("${game_directory}", " . ");
+        args = args.replace("${assets_root}", " ./assets ");
         args = args.replace("${assets_index_name}", asset_index);
         args = args.replace("${auth_uuid}", user.id.as_str());
         args = args.replace("${auth_access_token}", user.token.as_str());
         args = args.replace("${user_type}", "mojang");
 
         // First time setup
+        // using relative binpath
         let mut invoker = Invoker::new(
                 "java".to_string(),
-                binpath.clone(),
+                PathBuf::from("./bin"),
                 classpaths.clone(),
                 args,
                 main_class.to_string(),
@@ -347,9 +348,9 @@ pub async fn setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
         // POST 1.13.2
         let mut invoker = Invoker::new(
                 "java ".to_string(),
-                binpath,
+                PathBuf::from("bin"),
                 classpaths,
-                format!("{} --assetsDir {} --assetIndex {} --gameDir {} --version  {}  --versionType release --userType mojang", forge_args.unwrap(), assets_path.display(), asset_index, instance.get_path().display(), proj.files[choice].version),
+                format!("{} --assetsDir ./assets --assetIndex {} --gameDir . --version  {}  --versionType release --userType mojang", forge_args.unwrap(), asset_index, proj.files[choice].version),
                 main_class.to_string(),
                 instance.name(),
                 InstanceType::Forge,

@@ -84,7 +84,10 @@ pub fn get_cp_from_version(
         version_jarpath.set_extension("jar");
 
         if version_jarpath.exists() {
-            retvec.push(("version_jar".to_string(), version_jarpath));
+            let mut relative_version_jarpath = PathBuf::from("./versions");
+            relative_version_jarpath.push(version_jarpath.file_name().unwrap());
+
+            retvec.push(("version_jar".to_string(), relative_version_jarpath));
         }
 
         let file = File::open(version_fpath).unwrap();

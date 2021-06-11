@@ -56,7 +56,6 @@ OPTIONS:
 
 ## What doesn't work right now
     - Fabric Modpacks
-    - Vanilla 
 
 ## Issues
 

@@ -122,14 +122,12 @@ pub async fn setup(mut instance_manager: InstanceManager, user_path: PathBuf) {
 
 
  
-            let mut binpath = instance.get_path();
-            binpath.push("bin");
 
             let mut assets_path = instance.get_path();
             assets_path.push("assets");
 
             let mut classpaths = Vec::new();  
-            let classes = setup::get_cp_from_version(libpath, vec![vanilla_manifest_path]);
+            let classes = setup::get_cp_from_version(PathBuf::from("libraries"), vec![vanilla_manifest_path]);
 
             for class in classes {
                 classpaths.push(class.1);
@@ -141,11 +139,12 @@ pub async fn setup(mut instance_manager: InstanceManager, user_path: PathBuf) {
 
             let user = User::from(user_path.clone());
 
+            // using relative binpath
             let mut invoker = Invoker::new(
                 "java ".to_string(),
-                binpath,
+                PathBuf::from("./bin"),
                 classpaths,
-                format!(" --assetsDir {} --assetIndex {} --gameDir {} --version  {}  --versionType release --userType mojang", assets_path.display(), asset_index, instance.get_path().display(), vanilla_version),
+                format!(" --assetsDir ./assets --assetIndex {} --gameDir . --version  {}  --versionType release --userType mojang", asset_index, vanilla_version),
                 main_class.to_string(),
                 instance.name(),
                 InstanceType::Vanilla,

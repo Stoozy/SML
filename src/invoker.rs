@@ -45,7 +45,7 @@ impl Invoker {
 
     pub fn gen_invocation(&mut self) {
         let mut cmd: String = self.java.clone();
-        cmd.push_str(format!(" -Dfml.ignoreInvalidMinecraftCertificates=true  -Djava.library.path={} ", self.binpath.display()).as_str());
+        cmd.push_str(format!(" -Dfml.ignoreInvalidMinecraftCertificates=true  -Djava.library.path=./bin ").as_str());
 
         match &self.custom_args {
             Some(args) => {
@@ -94,7 +94,6 @@ impl Invoker {
 
     pub fn export_as_json(&mut self, path: PathBuf) {
         let mut file = std::fs::File::create(path).expect("Error writing command to file...");
-        let binpath_arg = format!("{}", self.binpath.display());
 
         let custom_args = match &self.custom_args {
             Some(args) => args.as_str(),
@@ -109,9 +108,10 @@ impl Invoker {
             InstanceType::Fabric => "FABRIC",
         };
 
+        //using relative bin path
         let serialized_invoker_data = json!({
             "java":"java",
-            "binpath" : binpath_arg,
+            "binpath" : "./bin",
             "custom_args": custom_args,
             "classpaths" : self.classpaths,
             "mainclass" : self.main,
@@ -138,33 +138,30 @@ impl Invoker {
         };
     }
 
-    pub fn invoke(&mut self, verbose : bool) {
+    pub fn invoke(&mut self, instance_path: PathBuf, verbose : bool) {
         let mut cps = "\"".to_string();
         for cp in &self.classpaths {
             cps.push_str(format!("{};", cp.display()).as_str());
         }
         cps.push_str("\"");
-        //println!("{}", cps);
 
-        println!("{}", self.ccmd.clone().unwrap());
-        let mut cwd = self.binpath.clone();
-        cwd.pop();
 
         self.gen_invocation();
         //self.display_invocation();
         
         if verbose {
 
+            println!("{}", self.ccmd.clone().unwrap());
             dbg!(self.ccmd.clone().unwrap()); 
-            dbg!(cwd.clone());
+            dbg!(instance_path.clone());
             // keep output in terminal and keep subprocess
             Exec::shell(self.ccmd.clone().unwrap())
-                .cwd(cwd)
+                .cwd(instance_path)
                 .popen()
                 .unwrap();
         }else{
             Exec::shell(self.ccmd.clone().unwrap())
-                .cwd(cwd)
+                .cwd(instance_path)
                 .stdout(Redirection::Pipe)
                 .popen()
                 .unwrap()
