@@ -1,6 +1,6 @@
 [package]
 name = "sml"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Stoozy"]
 description = "A minecraft launcher"
 homepage= "https://github.com/Stoozy/sml"

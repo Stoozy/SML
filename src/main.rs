@@ -57,8 +57,8 @@ async fn main() {
 
     // create new app
     let app = App::new("SML")
-        .version("0.1.0")
-        .author("Stoozy <mahinsemail@gmail.com>")
+        .version("0.1.1")
+        .author("Stoozy")
         .about("A Minecraft Modded Launcher Command Line Interface")
         .arg(
             Arg::with_name("list")
