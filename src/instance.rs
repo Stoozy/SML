@@ -98,11 +98,11 @@ impl Instance {
             .expect("Unable to write to sml invoker file");
     }
 
-    pub fn launch(&self) {
+    pub fn launch(&self, verbose: bool) {
 
         match self.invoker.clone() {
             Some(mut invoker) => {
-                invoker.invoke(true);
+                invoker.invoke(verbose);
             },
             None => (),
         }

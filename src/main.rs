@@ -104,6 +104,13 @@ async fn main() {
                 .takes_value(true),
         )
         .arg(
+            Arg::with_name("verbose")
+                .short("v")
+                .long("verbose") 
+                .takes_value(false)
+                .help("Shows output of launched instance"),
+        )
+        .arg(
             Arg::with_name("add-instance")
                 .short("a")
                 .long("add-instance")
@@ -219,7 +226,8 @@ async fn main() {
             for instance_path in instance_paths {
                 let instance = Instance::from(instance_path);
                 if &instance.uuid()[0..8] == id {
-                    instance.launch();
+                    
+                    instance.launch(app.is_present("verbose"));
                 }
             }
 
