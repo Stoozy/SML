@@ -2,7 +2,7 @@
 name = "sml"
 version = "0.1.1"
 authors = ["Stoozy"]
-description = "A minecraft launcher"
+description = "A Minecraft Launcher Command Line Interface"
 homepage= "https://github.com/Stoozy/sml"
 edition = "2018"
 

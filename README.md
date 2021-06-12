@@ -5,16 +5,17 @@
 
 Welcome to stoozys minecraft launcher!
 
-
 ## About
 
-This is a CLI program that allows you to install and launch curseforge modpacks. Currently it only supports forge only but soon it will have fabric and vanilla support.
+This is a CLI program that allows you to install and launch curseforge modpacks. Currently, it supports only vanilla and forge instances. Fabric will be supported soon. 
 
 ## Motivation
 
 I am working on this project purely for the learning experience, there are working minecraft modded launchers out there already, such as MultiMC. However, this project should benefit those who don't want a fully featured GUI program and would rather do things in a shell.
 
 ## Installation
+
+There are some plans to add it to some popular package managers, but this should do for now.
 
 Windows:
  - Go to releases
@@ -30,8 +31,8 @@ Linux:
 
 
 ```
-SML 0.1.0
-Stoozy <mahinsemail@gmail.com>
+SML 0.1.1
+Stoozy 
 A Minecraft Modded Launcher Command Line Interface
 
 USAGE:
@@ -55,7 +56,7 @@ OPTIONS:
 
 
 ## What doesn't work right now
-    - Fabric Modpacks
+ - Fabric Modpacks
 
 ## Issues
 
