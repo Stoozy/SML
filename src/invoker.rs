@@ -19,11 +19,12 @@ pub struct Invoker {
     instance_type: InstanceType,
     instance_name: String,
     user_name: String,
-    auth_token: String
+    auth_token: String,
+    uuid: String
 }
 
 impl Invoker {
-    pub fn new(java: String, binpath: PathBuf, classpaths: Vec<PathBuf>, args: String, main: String, instance_name: String, instance_type: InstanceType, user_name : String, auth_token : String) -> Invoker {
+    pub fn new(java: String, binpath: PathBuf, classpaths: Vec<PathBuf>, args: String, main: String, instance_name: String, instance_type: InstanceType, user_name : String, auth_token : String, uuid: String) -> Invoker {
         Invoker {
             java,
             custom_args: None,
@@ -35,7 +36,8 @@ impl Invoker {
             instance_type,
             instance_name,
             user_name,
-            auth_token
+            auth_token,
+            uuid
         }
     }
 
@@ -73,8 +75,8 @@ impl Invoker {
         //}
 
         // do user info separately
-        let userinfo_string = format!(" --accessToken {} --username {} ", 
-                                      self.auth_token, self.user_name);
+        let userinfo_string = format!(" --accessToken {} --username {} --uuid {} ", 
+                                      self.auth_token, self.user_name, self.uuid);
         self.args.push_str(userinfo_string.as_str());
 
         // main class
@@ -120,7 +122,8 @@ impl Invoker {
             "instance_name" : self.instance_name,
             "auth_token" : self.auth_token,
             "instance_uuid" : new_uuid.to_string(),
-            "instance_type": instance_type_str
+            "instance_type": instance_type_str,
+            "uuid": self.uuid.to_string()
         });
 
         let data = serde_json::to_string(&serialized_invoker_data)
@@ -194,6 +197,7 @@ impl From<&PathBuf> for Invoker {
         let instance_name = invoker_json["instance_name"].as_str().unwrap();
         let user_name = invoker_json["user_name"].as_str().unwrap();
         let auth_token = invoker_json["auth_token"].as_str().unwrap();
+        let uuid = invoker_json["uuid"].as_str().unwrap();
         let instance_type_str = invoker_json["instance_type"].as_str().unwrap();
 
 
@@ -220,6 +224,7 @@ impl From<&PathBuf> for Invoker {
                 "FABRIC"    => InstanceType::Fabric,
                 _ => InstanceType::Vanilla,
             },
+            uuid: uuid.to_string()
         }
     }
 }

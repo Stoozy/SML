@@ -334,7 +334,8 @@ pub async fn setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
                 instance.name(),
                 InstanceType::Forge,
                 user.name,
-                user.token
+                user.token,
+                user.id.to_string()
             );
 
         let mut invoker_file_path = instance.get_path();
@@ -356,6 +357,7 @@ pub async fn setup(mut ima: InstanceManager, id: u64, user_path: PathBuf) {
                 InstanceType::Forge,
                 user.name,
                 user.token,
+                user.id.to_string()
             );
 
         let mut invoker_file_path = instance.get_path();

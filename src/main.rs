@@ -256,7 +256,6 @@ async fn main() {
                 return;
             }
 
-
             // instance type based logic
             match instance_type.to_lowercase().as_str() {
                 "forge" => {

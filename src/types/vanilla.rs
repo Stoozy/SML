@@ -150,6 +150,7 @@ pub async fn setup(mut instance_manager: InstanceManager, user_path: PathBuf) {
                 InstanceType::Vanilla,
                 user.name,
                 user.token,
+                user.id.to_string()
             );
 
             let mut invoker_file_path = instance.get_path();

@@ -106,7 +106,6 @@ impl Instance {
             },
             None => (),
         }
-        //&self.invoker.unwrap().invoke();
     }
 
     pub fn get_path(&self) -> PathBuf {
